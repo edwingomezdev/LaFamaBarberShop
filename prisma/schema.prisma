@@ -1,0 +1,144 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ── USUARIO ──
+model Usuario {
+  id        Int      @id @default(autoincrement())
+  nombre    String
+  email     String   @unique
+  password  String
+  telefono  String?
+  rol       Rol      @default(CLIENTE)
+  createdAt DateTime @default(now())
+  citas     Cita[]
+  membresias   UsuarioMembresia[]
+}
+
+// ── BARBERO ──
+model Barbero {
+  id           Int      @id @default(autoincrement())
+  nombre       String
+  especialidad String
+  descripcion  String?
+  foto         String?
+  pin          String?
+  activo       Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  citas        Cita[]
+}
+
+// ── SERVICIO ──
+model Servicio {
+  id          Int            @id @default(autoincrement())
+  nombre      String
+  descripcion String?
+  precio      Float
+  duracion    Int            // duración en minutos
+  imagen      String?
+  activo      Boolean        @default(true)
+  citas       CitaServicio[]
+}
+
+// ── CITA ──
+model Cita {
+  id        Int            @id @default(autoincrement())
+  fecha     DateTime
+  hora      String
+  estado    EstadoCita     @default(PENDIENTE)
+  nota      String?
+  createdAt DateTime       @default(now())
+
+  usuarioId Int
+  usuario   Usuario        @relation(fields: [usuarioId], references: [id])
+
+  barberoId Int
+  barbero   Barbero        @relation(fields: [barberoId], references: [id])
+
+  servicios CitaServicio[]
+}
+
+// ── TABLA INTERMEDIA CITA-SERVICIO ──
+// Una cita puede tener varios servicios
+model CitaServicio {
+  citaId     Int
+  servicioId Int
+  cita       Cita     @relation(fields: [citaId], references: [id])
+  servicio   Servicio @relation(fields: [servicioId], references: [id])
+
+  @@id([citaId, servicioId])
+}
+
+// ── ENUMS ──
+enum Rol {
+  ADMIN
+  CLIENTE
+}
+
+enum EstadoCita {
+  PENDIENTE
+  CONFIRMADA
+  CANCELADA
+  COMPLETADA
+}
+
+
+model ImagenCarrusel {
+  id          Int      @id @default(autoincrement())
+  url         String
+  nombre      String
+  descripcion String?
+  orden       Int      @default(0)
+  activo      Boolean  @default(true)
+  createdAt   DateTime @default(now())
+}
+
+model Producto {
+  id          Int      @id @default(autoincrement())
+  nombre      String
+  descripcion String?
+  precio      Float
+  imagen      String?
+  categoria   String?
+  badge       String?
+  stock       Int      @default(0)
+  activo      Boolean  @default(true)
+  createdAt   DateTime @default(now())
+}
+
+model Membresia {
+  id              Int                @id @default(autoincrement())
+  nombre          String
+  precio          Float
+  cortesIncluidos Int
+  descripcion     String?
+  beneficios      String?
+  descuento       Int                @default(0)
+  activo          Boolean            @default(true)
+  createdAt       DateTime           @default(now())
+  usuarios        UsuarioMembresia[]
+}
+
+model UsuarioMembresia {
+  id            Int       @id @default(autoincrement())
+  usuarioId     Int
+  membresiaId   Int
+  fechaInicio   DateTime  @default(now())
+  fechaFin      DateTime
+  cortesUsados  Int       @default(0)
+  estado        String    @default("ACTIVA")
+  createdAt     DateTime  @default(now())
+  usuario       Usuario   @relation(fields: [usuarioId], references: [id])
+  membresia     Membresia @relation(fields: [membresiaId], references: [id])
+}
