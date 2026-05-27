@@ -309,111 +309,92 @@ const styles = `
   .section-tag { font-size: 11px; letter-spacing: 5px; text-transform: uppercase; color: var(--rojo); margin-bottom: 12px; display: block; }
   .section-title { font-family: 'Bebas Neue', sans-serif; font-size: clamp(48px, 6vw, 80px); line-height: 1; letter-spacing: 2px; }
 
-  .servicios-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 3px; }
+  /* ── SERVICIOS GRID (estilo tarjeta flotante igual que productos) ── */
+  .servicios-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 24px; }
 
- .servicio-card {
+  .servicio-card {
     position: relative; overflow: hidden;
-    height: 380px; cursor: pointer;
-    border: 1px solid transparent;
-    transition: all 0.4s;
+    background: var(--negro3);
+    border: 1px solid rgba(255,255,255,0.06);
+    border-radius: 16px;
+    padding: 0 0 0 0;
+    cursor: pointer;
+    transition: border-color 0.3s, background 0.3s;
+    display: flex; flex-direction: column;
   }
+  .servicio-card::before {
+    content: ''; position: absolute; bottom: 0; left: 0; right: 0;
+    height: 3px; background: var(--rojo);
+    transform: scaleX(0); transition: transform 0.4s cubic-bezier(.23,1,.32,1);
+    z-index: 5; border-radius: 0 0 16px 16px;
+  }
+  .servicio-card:hover { border-color: rgba(192,57,43,0.3); background: #161616; }
+  .servicio-card:hover::before { transform: scaleX(1); }
+  .servicio-card.selected { border-color: rgba(192,57,43,0.6); }
+  .servicio-card.selected::before { transform: scaleX(1); }
+  .servicio-card::after { display: none; }
 
   .servicio-card-bg {
-    position: absolute; inset: 0;
+    width: 100%; height: 200px;
     background-size: cover; background-position: center;
+    border-radius: 16px 16px 0 0;
     transition: transform 0.6s ease;
+    flex-shrink: 0;
   }
-
-  .servicio-card:hover .servicio-card-bg { transform: scale(1.06); }
-
-  .servicio-card::after {
-    content: '';
-    position: absolute; inset: 0;
-    background: linear-gradient(
-      to top,
-      rgba(0,0,0,0.95) 0%,
-      rgba(0,0,0,0.5) 50%,
-      rgba(0,0,0,0.1) 100%
-    );
-    transition: background 0.3s;
-  }
-
-  .servicio-card:hover::after {
-    background: linear-gradient(
-      to top,
-      rgba(0,0,0,0.98) 0%,
-      rgba(0,0,0,0.7) 50%,
-      rgba(0,0,0,0.3) 100%
-    );
-  }
-
-  .servicio-card.selected { border-color: var(--rojo); }
-  .servicio-card.selected::before {
-    content: ''; position: absolute; inset: 0;
-    border: 2px solid var(--rojo); z-index: 10;
-    pointer-events: none;
-  }
+  .servicio-card:hover .servicio-card-bg { transform: scale(1.04); }
 
   .servicio-card-content {
-    position: absolute; bottom: 0; left: 0; right: 0;
-    padding: 28px; z-index: 5;
-    transform: translateY(0);
-    transition: transform 0.3s ease;
+    padding: 20px 22px 24px;
+    display: flex; flex-direction: column; flex: 1;
+    position: relative; z-index: 2;
   }
 
   .servicio-check {
-    position: absolute; top: 16px; right: 16px;
-    width: 32px; height: 32px;
+    position: absolute; top: 12px; right: 12px;
+    width: 26px; height: 26px;
     background: var(--rojo); z-index: 10;
     display: flex; align-items: center; justify-content: center;
-    font-size: 14px; opacity: 0; transition: opacity 0.2s;
+    font-size: 12px; opacity: 0; transition: opacity 0.2s;
+    border-radius: 4px;
   }
-
   .servicio-card.selected .servicio-check { opacity: 1; }
 
   .servicio-tag-top {
-    position: absolute; top: 16px; left: 16px;
+    position: absolute; top: 12px; left: 12px;
     z-index: 10;
     font-family: 'Oswald', sans-serif;
-    font-size: 9px; letter-spacing: 3px; text-transform: uppercase;
+    font-size: 8px; letter-spacing: 3px; text-transform: uppercase;
     background: var(--rojo); color: var(--blanco);
-    padding: 5px 12px;
+    padding: 4px 10px;
   }
 
   .servicio-nombre {
     font-family: 'Bebas Neue', sans-serif;
-    font-size: 28px; letter-spacing: 2px;
-    text-transform: uppercase; margin-bottom: 6px;
+    font-size: 24px; letter-spacing: 2px;
+    text-transform: uppercase; margin-bottom: 4px;
     color: var(--blanco);
   }
 
   .servicio-desc {
-    font-size: 12px; color: rgba(255,255,255,0.6);
+    font-size: 12px; color: var(--gris);
     font-family: 'Crimson Pro', serif; font-style: italic;
-    margin-bottom: 14px; line-height: 1.5;
-    max-height: 0; overflow: hidden;
-    transition: max-height 0.3s ease, opacity 0.3s ease;
-    opacity: 0;
-  }
-
-  .servicio-card:hover .servicio-desc {
-    max-height: 60px; opacity: 1;
+    margin-bottom: 14px; line-height: 1.6; flex: 1;
   }
 
   .servicio-footer {
     display: flex; justify-content: space-between; align-items: center;
-    border-top: 1px solid rgba(255,255,255,0.1);
+    border-top: 1px solid rgba(255,255,255,0.06);
     padding-top: 12px; margin-top: 4px;
   }
 
   .servicio-precio {
     font-family: 'Bebas Neue', sans-serif;
-    font-size: 32px; color: var(--rojo); letter-spacing: 1px;
+    font-size: 30px; color: var(--rojo); letter-spacing: 1px;
   }
 
   .servicio-duracion {
     font-size: 10px; letter-spacing: 2px;
-    text-transform: uppercase; color: rgba(255,255,255,0.4);
+    text-transform: uppercase; color: rgba(255,255,255,0.35);
     font-family: 'Oswald', sans-serif;
   }
 
@@ -633,8 +614,7 @@ const styles = `
     .section-title { font-size: clamp(36px, 8vw, 60px); }
 
     /* Servicios */
-    .servicios-grid { grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 2px; }
-    .servicio-card { height: 300px; }
+    .servicios-grid { grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 12px; }
 
     /* Barberos */
     .barberos-grid { grid-template-columns: repeat(2, 1fr); gap: 16px; }
@@ -684,10 +664,8 @@ const styles = `
 
     /* Servicios */
     .servicios-grid { grid-template-columns: 1fr; }
-    .servicio-card { height: 280px; }
     .servicio-nombre { font-size: 24px; }
     .servicio-precio { font-size: 28px; }
-    .servicio-desc { max-height: 40px; opacity: 1; }
 
     /* Barberos */
     .barberos-grid { grid-template-columns: 1fr 1fr; gap: 12px; }
@@ -966,6 +944,94 @@ background: radial-gradient(circle at 30% 110%, #f09433 0%, #e6683c 25%, #dc2743
   @media (max-width: 480px) {
     .pf-grid { grid-template-columns: 1fr; }
   }
+
+  /* ── SECCIÓN MEMBRESÍAS ── */
+  .membresias-section { background: var(--negro); padding: 100px 60px; }
+  .membresias-intro { max-width: 700px; margin-bottom: 16px; }
+  .membresias-intro-text { font-family: 'Crimson Pro', serif; font-style: italic; font-size: 16px; color: var(--gris); line-height: 1.7; margin-bottom: 40px; }
+  .membresias-aviso { display: inline-flex; align-items: flex-start; gap: 12px; background: rgba(192,57,43,0.07); border: 1px solid rgba(192,57,43,0.2); padding: 14px 20px; margin-bottom: 48px; }
+  .membresias-aviso-txt { font-size: 11px; color: rgba(240,236,228,0.6); letter-spacing: 0.5px; line-height: 1.6; }
+  .membresias-aviso-txt strong { color: var(--rojo); font-weight: 500; }
+
+  .planes-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 3px; }
+
+  .plan-card {
+    position: relative; background: var(--negro2);
+    border: 1px solid rgba(255,255,255,0.05);
+    padding: 36px 28px 32px;
+    display: flex; flex-direction: column;
+    transition: border-color 0.3s, background 0.3s;
+  }
+  .plan-card::before {
+    content: ''; position: absolute; top: 0; left: 0; right: 0;
+    height: 3px; background: transparent;
+    transition: background 0.3s;
+  }
+  .plan-card:hover { border-color: rgba(192,57,43,0.2); background: #141414; }
+  .plan-card.featured { border-color: rgba(192,57,43,0.4); background: #131313; }
+  .plan-card.featured::before { background: var(--rojo); }
+
+  .plan-badge {
+    position: absolute; top: 0; right: 28px;
+    background: var(--rojo); color: var(--blanco);
+    font-size: 8px; letter-spacing: 3px; text-transform: uppercase;
+    padding: 6px 12px; font-family: 'Oswald', sans-serif;
+  }
+
+  .plan-nombre { font-family: 'Bebas Neue', sans-serif; font-size: 30px; letter-spacing: 3px; color: var(--blanco); margin-bottom: 6px; }
+  .plan-tipo { font-size: 10px; letter-spacing: 3px; text-transform: uppercase; color: var(--rojo); margin-bottom: 24px; }
+
+  .plan-precio-wrap { margin-bottom: 8px; }
+  .plan-precio { font-family: 'Bebas Neue', sans-serif; font-size: 52px; line-height: 1; color: var(--blanco); letter-spacing: 1px; }
+  .plan-precio .currency { font-size: 22px; color: var(--rojo); vertical-align: super; margin-right: 2px; }
+  .plan-periodo { font-size: 11px; color: var(--gris); letter-spacing: 2px; font-family: 'Oswald', sans-serif; font-weight: 300; display: block; margin-top: 2px; }
+  .plan-precio .periodo { font-size: 12px; color: var(--gris); letter-spacing: 2px; font-family: 'Oswald', sans-serif; font-weight: 300; display: block; margin-top: 2px; }
+  .plan-ahorro { font-size: 10px; letter-spacing: 2px; text-transform: uppercase; color: var(--rojo); margin-bottom: 6px; display: block; }
+
+  .plan-sin-membresia { font-size: 11px; color: var(--gris); letter-spacing: 1px; margin-bottom: 4px; }
+  .plan-con-membresia { font-size: 11px; color: var(--blanco); letter-spacing: 1px; margin-bottom: 20px; }
+  .plan-tachado { text-decoration: line-through; color: var(--gris2); }
+
+  .plan-divider { width: 100%; height: 1px; background: rgba(255,255,255,0.05); margin: 20px 0; }
+
+  .plan-beneficios { list-style: none; padding: 0; margin: 0 0 28px; flex: 1; }
+  .plan-beneficios li {
+    display: flex; align-items: flex-start; gap: 10px;
+    padding: 8px 0; border-bottom: 1px solid rgba(255,255,255,0.04);
+    font-size: 12px; color: var(--blanco); font-weight: 300; letter-spacing: 0.5px; line-height: 1.4;
+  }
+  .plan-beneficios li:last-child { border-bottom: none; }
+  .plan-check-yes { color: var(--rojo); font-size: 13px; font-weight: 700; flex-shrink: 0; margin-top: 1px; }
+
+  .plan-validez { font-size: 10px; letter-spacing: 3px; text-transform: uppercase; color: var(--gris); margin-bottom: 20px; display: flex; align-items: center; gap: 8px; }
+  .plan-validez::before { content: ''; width: 20px; height: 1px; background: var(--rojo); }
+
+  .plan-btn {
+    background: none; border: 1px solid rgba(255,255,255,0.12); color: var(--blanco);
+    font-family: 'Oswald', sans-serif; font-size: 11px; letter-spacing: 3px;
+    text-transform: uppercase; padding: 14px; cursor: pointer; width: 100%;
+    transition: all 0.2s;
+    clip-path: polygon(0 0,calc(100% - 10px) 0,100% 10px,100% 100%,10px 100%,0 calc(100% - 10px));
+  }
+  .plan-btn:hover { border-color: rgba(192,57,43,0.5); color: var(--rojo); }
+  .plan-card.featured .plan-btn { background: var(--rojo); border-color: var(--rojo); }
+  .plan-card.featured .plan-btn:hover { background: var(--rojo-vivo); }
+
+  .terminos-section { background: var(--negro3); border: 1px solid rgba(255,255,255,0.04); padding: 28px 32px; margin-top: 40px; }
+  .terminos-title { font-family: 'Oswald', sans-serif; font-size: 11px; letter-spacing: 4px; text-transform: uppercase; color: var(--rojo); margin-bottom: 16px; display: flex; align-items: center; gap: 10px; }
+  .terminos-title::before { content: ''; width: 20px; height: 1px; background: var(--rojo); }
+  .terminos-list { list-style: none; padding: 0; margin: 0; }
+  .terminos-list li { font-size: 11px; color: rgba(240,236,228,0.45); letter-spacing: 0.5px; line-height: 1.7; padding: 4px 0; border-bottom: 1px solid rgba(255,255,255,0.03); display: flex; gap: 8px; }
+  .terminos-list li:last-child { border-bottom: none; }
+  .terminos-list li::before { content: '·'; color: var(--rojo); flex-shrink: 0; }
+
+  .membresias-footer { display: flex; align-items: center; gap: 32px; flex-wrap: wrap; margin-top: 32px; }
+  .membresias-footer-item { display: flex; align-items: center; gap: 8px; }
+  .membresias-footer-dot { width: 5px; height: 5px; background: var(--rojo); border-radius: 50%; flex-shrink: 0; }
+  .membresias-footer-txt { font-size: 10px; letter-spacing: 2px; text-transform: uppercase; color: var(--gris2); }
+
+  @media (max-width: 900px) { .planes-grid { grid-template-columns: repeat(2,1fr); } .membresias-section { padding: 60px 20px; } }
+  @media (max-width: 580px) { .planes-grid { grid-template-columns: 1fr; gap: 16px; } }
 `;
 
 const MONTHS = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
@@ -1278,6 +1344,9 @@ export default function App() {
   const [confirmData, setConfirmData] = useState(null);
   const [toast, setToast] = useState(null);
   const [vista, setVista] = useState('home');
+  const [miMembresia, setMiMembresia] = useState(null);
+  const [planesMembresia, setPlanesMembresia] = useState([]);
+  const [productos, setProductos] = useState([]);
 
   useEffect(() => {
     // Capturar token de Google OAuth
@@ -1312,9 +1381,29 @@ export default function App() {
     }
     fetch(`${API}/servicios`).then(r => r.json()).then(d => setServicios(d)).finally(() => setLoadingSvcs(false));
     fetch(`${API}/barberos`).then(r => r.json()).then(d => setBarberos(d)).finally(() => setLoadingBarbs(false));
+    fetch(`${API}/membresias`).then(r => r.json()).then(d => { if (Array.isArray(d)) setPlanesMembresia(d); }).catch(() => { });
+    fetch(`${API}/productos`).then(r => r.json()).then(d => { if (Array.isArray(d)) setProductos(d); }).catch(() => { });
   }, []);
 
-  useEffect(() => { if (token) fetchMisCitas(); }, [token]);
+  useEffect(() => { if (token) { fetchMisCitas(); fetchMiMembresia(); } }, [token]);
+  /* 
+    const fetchMiMembresia = async () => {
+      try {
+        const r = await fetch(`${API}/membresias/mi-membresia`, { headers: { Authorization: `Bearer ${token}` } });
+        const data = await r.json();
+        setMiMembresia(data || null);
+      } catch { }
+    }; */
+
+  const fetchMiMembresia = async () => {
+    try {
+      const r = await fetch(`${API}/membresias/mi-membresia-detalle`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      const data = await r.json();
+      setMiMembresia(data || null);
+    } catch { }
+  };
 
   const fetchMisCitas = async () => {
     setLoadingCitas(true);
@@ -1384,8 +1473,9 @@ export default function App() {
       <nav className="nav">
         <div className="nav-logo" onClick={() => setVista('home')}>LA <span>FAMA</span> BARBER</div>
         <div className="nav-links">
-          <button className="nav-link" onClick={() => setVista('home')}>Inicio</button>
+          <button className="nav-link" onClick={() => { setVista('home'); window.scrollTo({ top: 0, behavior: 'smooth' }); }}>Inicio</button>
           <button className="nav-link" onClick={() => { setVista('home'); setTimeout(() => document.getElementById('servicios')?.scrollIntoView({ behavior: 'smooth' }), 100); }}>Servicios</button>
+          <button className="nav-link" onClick={() => { setVista('home'); setTimeout(() => document.getElementById('membresias')?.scrollIntoView({ behavior: 'smooth' }), 100); }}>Membresías</button>
           <button className="nav-link" onClick={() => { setVista('home'); setTimeout(() => document.getElementById('booking')?.scrollIntoView({ behavior: 'smooth' }), 100); }}>Reservar</button>
           {usuario && <button className="nav-link" onClick={() => setVista('citas')}>Mis Citas</button>}
           {usuario ? (
@@ -1411,6 +1501,21 @@ export default function App() {
                 <span style={{ fontSize: 12, letterSpacing: 1, color: 'var(--blanco)', fontFamily: "'Oswald', sans-serif" }}>
                   {usuario.nombre?.toUpperCase()}
                 </span>
+                {miMembresia && (
+                  <span style={{ fontSize: 9, letterSpacing: 2, textTransform: 'uppercase', background: 'var(--rojo)', color: 'var(--blanco)', padding: '2px 8px', fontFamily: "'Oswald', sans-serif" }}>
+                    ⭐ {miMembresia.membresia?.nombre}
+                  </span>
+                )}
+                {miMembresia?.alertaVencimiento && (
+                  <div style={{ background: 'rgba(212,168,67,0.1)', border: '1px solid rgba(212,168,67,0.4)', padding: '12px 20px', marginBottom: 12, fontSize: 12, color: '#d4a843', letterSpacing: 1, display: 'flex', alignItems: 'center', gap: 10 }}>
+                    ⚠️ Tu membresía <strong>{miMembresia.membresia?.nombre}</strong> vence en {miMembresia.diasRestantes} día(s)
+                  </div>
+                )}
+                {miMembresia?.alertaConsumo && (
+                  <div style={{ background: 'rgba(192,57,43,0.1)', border: '1px solid rgba(192,57,43,0.3)', padding: '12px 20px', marginBottom: 12, fontSize: 12, color: 'var(--rojo)', letterSpacing: 1, display: 'flex', alignItems: 'center', gap: 10 }}>
+                    🔔 Te queda solo <strong>1 corte</strong> disponible en tu membresía
+                  </div>
+                )}
               </div>
               <button className="nav-btn" onClick={logout}>SALIR</button>
             </div>
@@ -1529,6 +1634,39 @@ export default function App() {
             <span className="section-tag">Tu historial</span>
             <h2 className="section-title">MIS<br />CITAS</h2>
           </div>
+
+          {miMembresia && (
+            <div style={{ background: 'rgba(192,57,43,0.07)', border: '1px solid rgba(192,57,43,0.25)', padding: '20px 28px', marginBottom: 36, display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 16 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+                <span style={{ fontSize: 28 }}>⭐</span>
+                <div>
+                  <div style={{ fontFamily: "'Oswald', sans-serif", fontSize: 16, fontWeight: 600, letterSpacing: 2, textTransform: 'uppercase', color: 'var(--blanco)' }}>
+                    {miMembresia.membresia?.nombre}
+                  </div>
+                  <div style={{ fontSize: 11, color: 'var(--gris)', marginTop: 3, letterSpacing: 1 }}>
+                    {miMembresia.membresia?.cortesIncluidos} cortes incluidos · {miMembresia.membresia?.descuento}% descuento en servicios
+                  </div>
+                  {miMembresia.membresia?.descripcion && (
+                    <div style={{ fontSize: 11, color: 'var(--gris)', marginTop: 2, fontStyle: 'italic' }}>{miMembresia.membresia.descripcion}</div>
+                  )}
+                </div>
+              </div>
+              <div style={{ display: 'flex', gap: 28 }}>
+                <div style={{ textAlign: 'center' }}>
+                  <div style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: 32, color: 'var(--rojo)', lineHeight: 1 }}>{miMembresia.cortesUsados}</div>
+                  <div style={{ fontSize: 9, letterSpacing: 2, textTransform: 'uppercase', color: 'var(--gris)' }}>Usados</div>
+                </div>
+                <div style={{ textAlign: 'center' }}>
+                  <div style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: 32, color: 'var(--blanco)', lineHeight: 1 }}>{Math.max(0, miMembresia.membresia?.cortesIncluidos - miMembresia.cortesUsados)}</div>
+                  <div style={{ fontSize: 9, letterSpacing: 2, textTransform: 'uppercase', color: 'var(--gris)' }}>Disponibles</div>
+                </div>
+                <div style={{ textAlign: 'center' }}>
+                  <div style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: 20, color: 'var(--gris)', lineHeight: 1.2 }}>{new Date(miMembresia.fechaFin).toLocaleDateString('es-CO', { day: 'numeric', month: 'short', year: 'numeric' })}</div>
+                  <div style={{ fontSize: 9, letterSpacing: 2, textTransform: 'uppercase', color: 'var(--gris)' }}>Vence</div>
+                </div>
+              </div>
+            </div>
+          )}
           {loadingCitas ? <div className="loading"><div className="spinner" />Cargando...</div> :
             misCitas.length === 0 ? <div className="empty-state">No tienes citas agendadas aún.</div> :
               <div className="citas-grid">
@@ -1548,7 +1686,167 @@ export default function App() {
         </section>
       )}
 
-      
+
+
+      {/* ── SECCIÓN MEMBRESÍAS ── */}
+      {vista === 'home' && (
+        <section className="membresias-section" id="membresias">
+          <div className="section-header">
+            <span className="section-tag">Planes exclusivos</span>
+            <h2 className="section-title">ELIGE TU<br /><span style={{ color: 'var(--rojo)' }}>MEMBRESÍA</span></h2>
+          </div>
+
+          <div className="membresias-intro">
+            <p className="membresias-intro-text">
+              Cada una de nuestras membresías está diseñada para que siempre seas nuestra máxima prioridad.
+              El número de cupos es limitado para garantizarte la mejor atención.
+            </p>
+            <div className="membresias-aviso">
+              <div className="membresias-aviso-txt">
+                <strong>Corte sin membresía: $20.000 &nbsp;·&nbsp; Corte + Barba sin membresía: $30.000</strong><br />
+                Con membresía aplica descuento según plan. Válidos por el periodo contratado.
+              </div>
+            </div>
+          </div>
+          <div className="planes-grid">
+            {planesMembresia.length > 0 ? planesMembresia.map((plan, i) => (
+              <div key={plan.id} className={`plan-card ${i === Math.floor(planesMembresia.length / 2) ? 'featured' : ''}`}>
+                {i === Math.floor(planesMembresia.length / 2) && <div className="plan-badge">Más Popular</div>}
+                <div className="plan-nombre">{plan.nombre}</div>
+                {plan.descripcion && <div className="plan-tipo">{plan.descripcion}</div>}
+                <div className="plan-precio-wrap">
+                  <div className="plan-precio"><span className="currency">$</span>{Number(plan.precio).toLocaleString('es-CO')}</div>
+                  <span className="plan-periodo">/ {plan.cortesIncluidos} cortes</span>
+                </div>
+                {plan.descuento > 0 && <div className="plan-con-membresia">{plan.descuento}% descuento en servicios</div>}
+                <div className="plan-divider" />
+                {plan.beneficios && (
+                  <ul className="plan-beneficios">
+                    {plan.beneficios.split('\n').filter(b => b.trim()).map((b, j) => (
+                      <li key={j}><span className="plan-check-yes">✓</span> {b.trim()}</li>
+                    ))}
+                  </ul>
+                )}
+                <button className="plan-btn" onClick={() => window.open(`https://wa.me/573013090185?text=Hola%2C%20quiero%20el%20plan%20${encodeURIComponent(plan.nombre)}`, '_blank')}>
+                  SOLICITAR PLAN
+                </button>
+              </div>
+            )) : (
+              <>
+                <div className="plan-card">
+                  <div className="plan-nombre">VIP</div>
+                  <div className="plan-tipo">Solo Corte · 1 Mes</div>
+                  <div className="plan-precio-wrap">
+                    <div className="plan-precio"><span className="currency">$</span>38.000</div>
+                    <span className="plan-periodo">/ 2 cortes</span>
+                  </div>
+                  <span className="plan-ahorro">Ahorras $2.000</span>
+                  <div className="plan-sin-membresia">Sin membresía: <span className="plan-tachado">$40.000</span></div>
+                  <div className="plan-con-membresia">Con membresía: <strong>$19.000 / corte</strong></div>
+                  <div className="plan-validez">Válido por 1 mes</div>
+                  <div className="plan-divider" />
+                  <ul className="plan-beneficios">
+                    <li><span className="plan-check-yes">✓</span> 2 Cortes incluidos</li>
+                    <li><span className="plan-check-yes">✓</span> Reserva prioritaria</li>
+                    <li><span className="plan-check-yes">✓</span> 20% dto. productos marca propia</li>
+                    <li><span className="plan-check-yes">✓</span> 20% dto. servicios seleccionados</li>
+                  </ul>
+                  <button className="plan-btn" onClick={() => window.open('https://wa.me/573013090185?text=Hola%2C%20quiero%20el%20plan%20VIP%201%20mes', '_blank')}>SOLICITAR PLAN</button>
+                </div>
+
+                <div className="plan-card">
+                  <div className="plan-nombre">VIP PLUS</div>
+                  <div className="plan-tipo">Corte + Barba · 1 Mes</div>
+                  <div className="plan-precio-wrap">
+                    <div className="plan-precio"><span className="currency">$</span>58.000</div>
+                    <span className="plan-periodo">/ 2 servicios</span>
+                  </div>
+                  <span className="plan-ahorro">Ahorras $2.000</span>
+                  <div className="plan-sin-membresia">Sin membresía: <span className="plan-tachado">$60.000</span></div>
+                  <div className="plan-con-membresia">Con membresía: <strong>$29.000 / servicio</strong></div>
+                  <div className="plan-validez">Válido por 1 mes</div>
+                  <div className="plan-divider" />
+                  <ul className="plan-beneficios">
+                    <li><span className="plan-check-yes">✓</span> 2 Cortes + Barba incluidos</li>
+                    <li><span className="plan-check-yes">✓</span> Reserva prioritaria</li>
+                    <li><span className="plan-check-yes">✓</span> 20% dto. productos marca propia</li>
+                    <li><span className="plan-check-yes">✓</span> 20% dto. servicios seleccionados</li>
+                  </ul>
+                  <button className="plan-btn" onClick={() => window.open('https://wa.me/573013090185?text=Hola%2C%20quiero%20el%20plan%20VIP%20PLUS%201%20mes', '_blank')}>SOLICITAR PLAN</button>
+                </div>
+
+                <div className="plan-card featured">
+                  <div className="plan-badge">Más Popular</div>
+                  <div className="plan-nombre">BLACK</div>
+                  <div className="plan-tipo">Solo Corte · 2 Meses</div>
+                  <div className="plan-precio-wrap">
+                    <div className="plan-precio"><span className="currency">$</span>72.000</div>
+                    <span className="plan-periodo">/ 4 cortes</span>
+                  </div>
+                  <span className="plan-ahorro">Ahorras $8.000</span>
+                  <div className="plan-sin-membresia">Sin membresía: <span className="plan-tachado">$80.000</span></div>
+                  <div className="plan-con-membresia">Con membresía: <strong>$18.000 / corte</strong></div>
+                  <div className="plan-validez">Válido por 2 meses</div>
+                  <div className="plan-divider" />
+                  <ul className="plan-beneficios">
+                    <li><span className="plan-check-yes">✓</span> 4 Cortes incluidos</li>
+                    <li><span className="plan-check-yes">✓</span> Reserva prioritaria</li>
+                    <li><span className="plan-check-yes">✓</span> 20% dto. productos marca propia</li>
+                    <li><span className="plan-check-yes">✓</span> 20% dto. servicios seleccionados</li>
+                  </ul>
+                  <button className="plan-btn" onClick={() => window.open('https://wa.me/573013090185?text=Hola%2C%20quiero%20el%20plan%20BLACK%202%20meses', '_blank')}>SOLICITAR PLAN</button>
+                </div>
+
+                <div className="plan-card featured">
+                  <div className="plan-badge">Premium</div>
+                  <div className="plan-nombre">BLACK PLUS</div>
+                  <div className="plan-tipo">Corte + Barba · 2 Meses</div>
+                  <div className="plan-precio-wrap">
+                    <div className="plan-precio"><span className="currency">$</span>112.000</div>
+                    <span className="plan-periodo">/ 4 servicios</span>
+                  </div>
+                  <span className="plan-ahorro">Ahorras $8.000</span>
+                  <div className="plan-sin-membresia">Sin membresía: <span className="plan-tachado">$120.000</span></div>
+                  <div className="plan-con-membresia">Con membresía: <strong>$28.000 / servicio</strong></div>
+                  <div className="plan-validez">Válido por 2 meses</div>
+                  <div className="plan-divider" />
+                  <ul className="plan-beneficios">
+                    <li><span className="plan-check-yes">✓</span> 4 Cortes + Barba incluidos</li>
+                    <li><span className="plan-check-yes">✓</span> Reserva prioritaria</li>
+                    <li><span className="plan-check-yes">✓</span> 20% dto. productos marca propia</li>
+                    <li><span className="plan-check-yes">✓</span> 20% dto. servicios seleccionados</li>
+                  </ul>
+                  <button className="plan-btn" onClick={() => window.open('https://wa.me/573013090185?text=Hola%2C%20quiero%20el%20plan%20BLACK%20PLUS%202%20meses', '_blank')}>SOLICITAR PLAN</button>
+                </div>
+              </>
+            )}
+          </div> {/* ← cierre planes-grid AQUÍ, fuera del ternario */}
+
+          {/* Términos y condiciones */}
+          <div className="terminos-section">
+            <div className="terminos-title">Términos y Condiciones</div>
+            <ul className="terminos-list">
+              <li>Las reservas están sujetas a la disponibilidad de la agenda.</li>
+              <li>Límite máximo de uso según la vigencia del plan (1 o 2 meses).</li>
+              <li>20% de descuento en productos de marca propia y servicios seleccionados: Cejas, Mascarillas Faciales y servicios adicionales. No aplica para químicos (keratinas, tintes, decoloraciones, entre otros).</li>
+              <li>Las membresías pueden transferirse a familiares o amigos con autorización del titular y reserva desde el perfil asociado.</li>
+              <li>La cancelación de la reserva debe realizarse con mínimo 40 minutos de antelación; de lo contrario, el servicio será descontado del plan.</li>
+              <li>Los servicios solo pueden reservarse en la sede correspondiente al plan adquirido.</li>
+              <li>No existe compromiso a largo plazo y no se ofrece devolución del dinero.</li>
+              <li>Se aplican condiciones y restricciones adicionales.</li>
+            </ul>
+          </div>
+
+          <div className="membresias-footer">
+            <div className="membresias-footer-item"><div className="membresias-footer-dot"></div><span className="membresias-footer-txt">Cupos limitados</span></div>
+            <div className="membresias-footer-item"><div className="membresias-footer-dot"></div><span className="membresias-footer-txt">Sin compromiso largo plazo</span></div>
+            <div className="membresias-footer-item"><div className="membresias-footer-dot"></div><span className="membresias-footer-txt">Transferible a familiares</span></div>
+            <div className="membresias-footer-item"><div className="membresias-footer-dot"></div><span className="membresias-footer-txt">Solicitar por WhatsApp</span></div>
+          </div>
+
+        </section>
+      )}
+
       {/* ── SECCIÓN PRODUCTOS FLOTANTES ── */}
       {vista === 'home' && (
         <section className="pf-section" id="productos">
@@ -1557,84 +1855,101 @@ export default function App() {
             <h2 className="section-title">NUESTROS<br /><span style={{ color: 'var(--rojo)' }}>PRODUCTOS</span></h2>
           </div>
           <div className="pf-grid">
-
-            <div className="pf-card">
-              <div className="pf-glow" />
-              <span className="pf-badge">Top seller</span>
-              <div className="pf-img-wrap">
-                {/* Reemplaza src con tu imagen: /productos/pomada.png */}
-                <img src="https://images.unsplash.com/photo-1599351431202-1e0f0137899a?w=300&q=90&fit=crop" alt="Pomada" />
+            {productos.length > 0 ? productos.map((p, i) => (
+              <div key={p.id} className="pf-card" style={{ animationDelay: `${i * 0.1}s` }}>
+                <div className="pf-glow" />
+                {p.badge && <span className="pf-badge">{p.badge}</span>}
+                <div className="pf-img-wrap">
+                  <img
+                    src={p.imagen || 'https://images.unsplash.com/photo-1599351431202-1e0f0137899a?w=300&q=90&fit=crop'}
+                    alt={p.nombre}
+                    onError={e => { e.target.src = 'https://images.unsplash.com/photo-1599351431202-1e0f0137899a?w=300&q=90&fit=crop'; }}
+                  />
+                </div>
+                <div className="pf-shadow" />
+                <div className="pf-nombre">{p.nombre}</div>
+                {p.categoria && <div className="pf-cat">{p.categoria}</div>}
+                <div className="pf-divider" />
+                {p.descripcion && <div className="pf-desc">{p.descripcion}</div>}
+                <div className="pf-footer">
+                  <div className="pf-precio">${Number(p.precio).toLocaleString('es-CO')}</div>
+                  <div style={{ fontSize: '10px', letterSpacing: '3px', textTransform: 'uppercase', color: 'var(--gris)', fontFamily: "'Oswald',sans-serif" }}>En tienda</div>
+                </div>
               </div>
-              <div className="pf-shadow" />
-              <div className="pf-nombre">Pomada</div>
-              <div className="pf-cat">Fijación & Brillo</div>
-              <div className="pf-divider" />
-              <div className="pf-desc">Fijación fuerte con acabado brillante. Ideal para estilos clásicos y modernos.</div>
-              <div className="pf-footer">
-                <div className="pf-precio">$35.000</div>
-                <button className="pf-btn">Agregar</button>
-              </div>
-            </div>
-
-            <div className="pf-card">
-              <div className="pf-glow" />
-              <div className="pf-img-wrap">
-                {/* Reemplaza src con tu imagen: /productos/navaja.png */}
-                <img src="https://images.unsplash.com/photo-1585747860715-2ba37e788b70?w=300&q=90&fit=crop" alt="Navaja" />
-              </div>
-              <div className="pf-shadow" />
-              <div className="pf-nombre">Navaja</div>
-              <div className="pf-cat">Afeitado Clásico</div>
-              <div className="pf-divider" />
-              <div className="pf-desc">Acero inoxidable de alta gama. Afeitado limpio y preciso.</div>
-              <div className="pf-footer">
-                <div className="pf-precio">$85.000</div>
-                <button className="pf-btn">Agregar</button>
-              </div>
-            </div>
-
-            <div className="pf-card">
-              <div className="pf-glow" />
-              <div className="pf-img-wrap">
-                {/* Reemplaza src con tu imagen: /productos/aftershave.png */}
-                <img src="https://images.unsplash.com/photo-1503951914875-452162b0f3f1?w=300&q=90&fit=crop" alt="Aftershave" />
-              </div>
-              <div className="pf-shadow" />
-              <div className="pf-nombre">Aftershave</div>
-              <div className="pf-cat">Cuidado & Fragancia</div>
-              <div className="pf-divider" />
-              <div className="pf-desc">Calma la piel tras el afeitado. Aroma amaderado con aloe y mentol.</div>
-              <div className="pf-footer">
-                <div className="pf-precio">$48.000</div>
-                <button className="pf-btn">Agregar</button>
-              </div>
-            </div>
-
-            <div className="pf-card">
-              <div className="pf-glow" />
-              <span className="pf-badge">Nuevo</span>
-              <div className="pf-img-wrap">
-                {/* Reemplaza src con tu imagen: /productos/cera.png */}
-                <img src="https://images.unsplash.com/photo-1621605815971-fbc98d665033?w=300&q=90&fit=crop" alt="Cera" />
-              </div>
-              <div className="pf-shadow" />
-              <div className="pf-nombre">Cera Mat</div>
-              <div className="pf-cat">Control & Textura</div>
-              <div className="pf-divider" />
-              <div className="pf-desc">Acabado mate natural con fijación media. Perfecta para looks texturizados.</div>
-              <div className="pf-footer">
-                <div className="pf-precio">$32.000</div>
-                <button className="pf-btn">Agregar</button>
-              </div>
-            </div>
-
+            )) : (
+              /* Productos por defecto si no hay en la BD */
+              <>
+                <div className="pf-card">
+                  <div className="pf-glow" />
+                  <span className="pf-badge">Top seller</span>
+                  <div className="pf-img-wrap">
+                    <img src="https://images.unsplash.com/photo-1599351431202-1e0f0137899a?w=300&q=90&fit=crop" alt="Pomada" />
+                  </div>
+                  <div className="pf-shadow" />
+                  <div className="pf-nombre">Pomada</div>
+                  <div className="pf-cat">Fijación & Brillo</div>
+                  <div className="pf-divider" />
+                  <div className="pf-desc">Fijación fuerte con acabado brillante. Ideal para estilos clásicos y modernos.</div>
+                  <div className="pf-footer">
+                    <div className="pf-precio">$35.000</div>
+                    <div style={{ fontSize: '10px', letterSpacing: '3px', textTransform: 'uppercase', color: 'var(--gris)', fontFamily: "'Oswald',sans-serif" }}>En tienda</div>
+                  </div>
+                </div>
+                <div className="pf-card">
+                  <div className="pf-glow" />
+                  <div className="pf-img-wrap">
+                    <img src="https://images.unsplash.com/photo-1585747860715-2ba37e788b70?w=300&q=90&fit=crop" alt="Navaja" />
+                  </div>
+                  <div className="pf-shadow" />
+                  <div className="pf-nombre">Navaja</div>
+                  <div className="pf-cat">Afeitado Clásico</div>
+                  <div className="pf-divider" />
+                  <div className="pf-desc">Acero inoxidable de alta gama. Afeitado limpio y preciso.</div>
+                  <div className="pf-footer">
+                    <div className="pf-precio">$85.000</div>
+                    <div style={{ fontSize: '10px', letterSpacing: '3px', textTransform: 'uppercase', color: 'var(--gris)', fontFamily: "'Oswald',sans-serif" }}>En tienda</div>
+                  </div>
+                </div>
+                <div className="pf-card">
+                  <div className="pf-glow" />
+                  <div className="pf-img-wrap">
+                    <img src="https://images.unsplash.com/photo-1503951914875-452162b0f3f1?w=300&q=90&fit=crop" alt="Aftershave" />
+                  </div>
+                  <div className="pf-shadow" />
+                  <div className="pf-nombre">Aftershave</div>
+                  <div className="pf-cat">Cuidado & Fragancia</div>
+                  <div className="pf-divider" />
+                  <div className="pf-desc">Calma la piel tras el afeitado. Aroma amaderado con aloe y mentol.</div>
+                  <div className="pf-footer">
+                    <div className="pf-precio">$48.000</div>
+                    <div style={{ fontSize: '10px', letterSpacing: '3px', textTransform: 'uppercase', color: 'var(--gris)', fontFamily: "'Oswald',sans-serif" }}>En tienda</div>
+                  </div>
+                </div>
+                <div className="pf-card">
+                  <div className="pf-glow" />
+                  <span className="pf-badge">Nuevo</span>
+                  <div className="pf-img-wrap">
+                    <img src="https://images.unsplash.com/photo-1621605815971-fbc98d665033?w=300&q=90&fit=crop" alt="Cera" />
+                  </div>
+                  <div className="pf-shadow" />
+                  <div className="pf-nombre">Cera Mat</div>
+                  <div className="pf-cat">Control & Textura</div>
+                  <div className="pf-divider" />
+                  <div className="pf-desc">Acabado mate natural con fijación media. Perfecta para looks texturizados.</div>
+                  <div className="pf-footer">
+                    <div className="pf-precio">$32.000</div>
+                    <div style={{ fontSize: '10px', letterSpacing: '3px', textTransform: 'uppercase', color: 'var(--gris)', fontFamily: "'Oswald',sans-serif" }}>En tienda</div>
+                  </div>
+                </div>
+              </>
+            )}
           </div>
         </section>
       )}
 
 
       {/* ── SECCIÓN DIRECCIÓN ── */}
-      <section className="direccion-section">
+      {vista === 'home' && <section className="direccion-section">
         <div className="direccion-info">
           <span className="direccion-tag">Encuéntranos</span>
           <h2 className="direccion-title">ESTAMOS<br /><span style={{ color: 'var(--rojo)' }}>UBICADOS</span></h2>
@@ -1672,7 +1987,7 @@ export default function App() {
           referrerPolicy="no-referrer-when-downgrade"
           title="La Fama Barber"
         />
-      </section>
+      </section>}
 
       <footer className="footer">
         <div className="footer-logo">LA <span>FAMA</span> BARBER</div>

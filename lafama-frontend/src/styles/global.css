@@ -1,0 +1,141 @@
+/* ── src/styles/global.css ───────────────────────────────────────────────────
+   Estilos base compartidos por toda la app.
+   Antes: cada JSX tenía su propio const styles = `...` con 500+ líneas de CSS
+   repetido. Ahora vive aquí y se importa una sola vez en main.jsx.
+   ─────────────────────────────────────────────────────────────────────────── */
+
+@import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Oswald:wght@300;400;500;600;700&family=Barlow+Condensed:wght@300;400;500;600;700;800&family=Barlow:wght@300;400;500&family=Crimson+Pro:ital,wght@0,300;0,400;1,300;1,400&display=swap');
+
+/* ── Reset ──────────────────────────────────────────────────────────────────── */
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+/* ── Variables (Design tokens) ──────────────────────────────────────────────── */
+:root {
+  --rojo:       #c0392b;
+  --rojo-vivo:  #e74c3c;
+  --negro:      #080808;
+  --negro2:     #111111;
+  --negro3:     #1a1a1a;
+  --negro4:     #222222;
+  --blanco:     #f0ece4;
+  --gris:       #666;
+  --gris2:      #444;
+  --oro:        #d4a843;
+  --verde:      #27ae60;
+  --verde-claro:#2ecc71;
+  --azul:       #2980b9;
+}
+
+/* ── Base ───────────────────────────────────────────────────────────────────── */
+body {
+  background: var(--negro);
+  color: var(--blanco);
+  font-family: 'Oswald', sans-serif;
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+/* ── Scrollbar ──────────────────────────────────────────────────────────────── */
+::-webkit-scrollbar       { width: 4px; }
+::-webkit-scrollbar-track { background: var(--negro2); }
+::-webkit-scrollbar-thumb { background: var(--rojo); }
+
+/* ── Spinner ────────────────────────────────────────────────────────────────── */
+.spinner {
+  width: 20px; height: 20px;
+  border: 2px solid rgba(192,57,43,0.3);
+  border-top-color: var(--rojo);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+  margin-right: 12px;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+.loading {
+  display: flex; align-items: center; justify-content: center;
+  padding: 60px; color: var(--gris);
+  font-size: 12px; letter-spacing: 3px; text-transform: uppercase;
+}
+
+/* ── Toast ──────────────────────────────────────────────────────────────────── */
+.toast {
+  position: fixed; bottom: 32px; right: 32px;
+  background: var(--negro2); border: 1px solid;
+  padding: 16px 24px; z-index: 500;
+  font-size: 13px; letter-spacing: 1px;
+  animation: slideUp 0.3s ease; max-width: 320px;
+}
+.toast.success { border-color: #00c864; color: #00c864; }
+.toast.error   { border-color: var(--rojo); color: var(--rojo); }
+
+/* ── Modal overlay ──────────────────────────────────────────────────────────── */
+.modal-overlay {
+  position: fixed; inset: 0;
+  background: rgba(0,0,0,0.92);
+  z-index: 200; display: flex;
+  align-items: center; justify-content: center;
+  animation: fadeIn 0.2s ease;
+}
+@keyframes fadeIn  { from { opacity: 0; } to { opacity: 1; } }
+@keyframes slideUp { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+
+/* ── Form inputs compartidos ────────────────────────────────────────────────── */
+.form-label, .field-label {
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: 10px; letter-spacing: 3px;
+  text-transform: uppercase; color: var(--rojo);
+  display: block; margin-bottom: 8px; margin-top: 16px;
+}
+.form-label:first-of-type,
+.field-label:first-of-type { margin-top: 0; }
+
+.form-input, .input {
+  width: 100%;
+  background: var(--negro3);
+  border: 1px solid rgba(255,255,255,0.08);
+  color: var(--blanco);
+  padding: 13px 16px;
+  font-family: 'Oswald', sans-serif; font-size: 14px;
+  font-weight: 300; outline: none;
+  transition: border-color 0.2s; margin-bottom: 4px;
+  letter-spacing: 1px;
+}
+.form-input:focus, .input:focus { border-color: var(--rojo); }
+.form-input::placeholder, .input::placeholder { color: rgba(255,255,255,0.2); }
+
+/* ── Buttons ────────────────────────────────────────────────────────────────── */
+.btn-primary {
+  background: var(--rojo); color: var(--blanco);
+  border: none; padding: 10px 24px;
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: 12px; letter-spacing: 2px;
+  text-transform: uppercase; cursor: pointer;
+  transition: background 0.2s; font-weight: 600;
+}
+.btn-primary:hover { background: var(--rojo-vivo); }
+.btn-primary:disabled { opacity: 0.4; cursor: not-allowed; }
+
+/* ── Estados badge (citas) ──────────────────────────────────────────────────── */
+.estado-PENDIENTE  { background: rgba(255,165,0,0.15); color: orange;    border: 1px solid rgba(255,165,0,0.3); }
+.estado-CONFIRMADA { background: rgba(0,200,100,0.15); color: #00c864;  border: 1px solid rgba(0,200,100,0.3); }
+.estado-CANCELADA  { background: rgba(192,57,43,0.15); color: var(--rojo); border: 1px solid rgba(192,57,43,0.3); }
+.estado-COMPLETADA { background: rgba(100,100,255,0.15); color: #8888ff; border: 1px solid rgba(100,100,255,0.3); }
+
+/* ── Alert ──────────────────────────────────────────────────────────────────── */
+.alert {
+  padding: 12px 16px; margin-bottom: 16px; font-size: 12px;
+  letter-spacing: 1px; border: 1px solid rgba(192,57,43,0.4);
+  color: var(--rojo); background: rgba(192,57,43,0.08);
+}
+
+/* ── Empty state ────────────────────────────────────────────────────────────── */
+.empty-state {
+  text-align: center; padding: 60px; color: var(--gris);
+  font-size: 13px; border: 1px dashed rgba(255,255,255,0.06);
+  font-family: 'Crimson Pro', serif; font-style: italic;
+}
+
+/* ── Responsive toast ───────────────────────────────────────────────────────── */
+@media (max-width: 768px) {
+  .toast { bottom: 80px; right: 16px; left: 16px; max-width: none; }
+}
