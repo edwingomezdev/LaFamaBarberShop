@@ -1,18 +1,17 @@
 {
-  "name": "barberia-api",
+  "name": "lafama-barber-api",
   "version": "1.0.0",
-  "main": "index.js",
+  "main": "src/index.js",
   "scripts": {
     "dev": "nodemon src/index.js",
     "start": "node src/index.js"
   },
   "keywords": [],
-  "author": "",
+  "author": "Edwin Gomez",
   "license": "ISC",
-  "description": "",
+  "description": "API REST para La Fama Barber Shop",
   "dependencies": {
     "@prisma/client": "^6.19.2",
-    "bcrypt": "^6.0.0",
     "bcryptjs": "^3.0.3",
     "cors": "^2.8.6",
     "dotenv": "^17.3.1",
@@ -22,7 +21,8 @@
     "multer": "^2.1.1",
     "passport": "^0.7.0",
     "passport-google-oauth20": "^2.0.0",
-    "react-icons": "^5.6.0",
+    "pino": "^9.6.0",
+    "pino-pretty": "^13.0.0",
     "swagger-jsdoc": "^6.2.8",
     "swagger-ui-express": "^5.0.1",
     "zod": "^4.3.6"
