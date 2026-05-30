@@ -1,12 +1,6 @@
-# La Fama Barber Shop — Management System
+# La Fama Barber Shop — API
 
-Full-stack web application for managing barbershop operations, built with a multi-role architecture for admins, barbers, and clients.
-
----
-
-## Overview
-
-La Fama is a real-world barbershop management system developed as a freelance project. It handles appointment scheduling, staff management, service tracking, and client authentication — replacing manual processes with a centralized digital platform.
+API REST para la gestión de una barbería: turnos, barberos, servicios, productos y membresías.
 
 ---
 
@@ -15,74 +9,79 @@ La Fama is a real-world barbershop management system developed as a freelance pr
 **Backend**
 - Node.js + Express 5
 - Prisma ORM (PostgreSQL)
-- JWT authentication + Google OAuth 2.0 (Passport.js)
-- Zod (schema validation)
-- Swagger UI (API documentation)
-- Multer (file uploads)
-- bcrypt (password hashing)
+- JWT + Google OAuth 2.0 (Passport.js)
+- Zod (validación de entorno y requests)
+- Pino (logging estructurado)
+- Swagger UI (documentación de API)
+- Multer (subida de archivos)
+- bcryptjs (hash de contraseñas)
 
 **Frontend**
-- React
-- Tailwind CSS / Bootstrap
+- React + Tailwind CSS
 
 ---
 
-## Features
+## Arquitectura
 
-- Multi-role access: admin, barber, and client views
-- Appointment booking and scheduling system
-- Staff and service management
-- Google OAuth 2.0 login
-- JWT-based session handling
-- Input validation with Zod
-- Auto-generated API docs with Swagger
-- File upload support (profile images, assets)
+```
+src/
+├── config/          # env.js (validación), logger.js, passport.js
+├── controllers/     # Reciben request → llaman service → devuelven response
+├── services/        # Lógica de negocio y acceso a Prisma
+├── middlewares/     # auth.middleware.js, error.middleware.js, validate.middleware.js
+├── routes/          # Definición de endpoints
+├── jobs/            # Tareas programadas (cancelación de citas, membresías vencidas)
+└── index.js         # Arranque del servidor
+prisma/
+├── schema.prisma    # Modelos y enums
+└── migrations/
+lafama-frontend/     # App React
+```
 
 ---
 
-## Project Structure
+## Endpoints principales
 
-```
-LaFamaBarberShop/
-├── src/                  # Express backend (routes, controllers, middleware)
-├── prisma/               # Database schema and migrations
-├── lafama-frontend/      # React frontend
-├── prisma.config.ts      # Prisma configuration
-└── package.json
-```
+| Método | Ruta | Descripción | Auth |
+|--------|------|-------------|------|
+| POST | `/api/auth/registro` | Crear cuenta | — |
+| POST | `/api/auth/login` | Iniciar sesión | — |
+| GET | `/api/citas` | Listar todas las citas | Admin |
+| POST | `/api/citas` | Agendar cita | Cliente |
+| GET | `/api/citas/mis-citas` | Mis citas | Cliente |
+| GET | `/api/barberos` | Listar barberos | — |
+| GET | `/api/servicios` | Listar servicios | — |
+| GET | `/api/membresias` | Listar membresías | — |
+| GET | `/api/usuarios` | Listar clientes | Admin |
+
+Documentación completa en `/api-docs` (Swagger UI).
 
 ---
 
 ## Getting Started
 
-### Prerequisites
+### Requisitos
 
 - Node.js 18+
-- PostgreSQL database
-- Google OAuth credentials (for social login)
+- PostgreSQL
+- Google OAuth credentials (opcional, para login social)
 
-### Installation
+### Instalación
 
 ```bash
-# Clone the repository
 git clone https://github.com/edwingomezdev/LaFamaBarberShop.git
 cd LaFamaBarberShop
 
-# Install backend dependencies
 npm install
 
-# Set up environment variables
 cp .env.example .env
-# Fill in your DB connection string, JWT secret, and Google OAuth credentials
+# Edita .env con tus valores
 
-# Run database migrations
 npx prisma migrate dev
-
-# Start development server
 npm run dev
 ```
 
-### Frontend setup
+### Frontend
 
 ```bash
 cd lafama-frontend
@@ -92,20 +91,15 @@ npm run dev
 
 ---
 
-## API Documentation
+## Variables de entorno
 
-Swagger UI is available at `http://localhost:3000/api-docs` when running locally.
+Ver `.env.example` para la lista completa con descripción de cada variable.
 
----
-
-## Status
-
-Currently in active development. Core modules (auth, scheduling, staff management) are functional. Ongoing work on client-facing features and production deployment.
+El servidor **no arranca** si alguna variable requerida falta o es inválida.
 
 ---
 
 ## Author
 
-**Edwin Alejandro Gomez Ruiz**  
-Full Stack Developer · Medellín, Colombia  
+**Edwin Alejandro Gomez Ruiz** — Full Stack Developer · Colombia  
 [LinkedIn](https://www.linkedin.com/in/edwin-gomezdev) · [GitHub](https://github.com/edwingomezdev)

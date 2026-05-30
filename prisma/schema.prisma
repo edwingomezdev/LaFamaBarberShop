@@ -1,9 +1,3 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
-// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
-// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
-
 generator client {
   provider = "prisma-client-js"
 }
@@ -13,20 +7,40 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-// ── USUARIO ──
-model Usuario {
-  id        Int      @id @default(autoincrement())
-  nombre    String
-  email     String   @unique
-  password  String
-  telefono  String?
-  rol       Rol      @default(CLIENTE)
-  createdAt DateTime @default(now())
-  citas     Cita[]
-  membresias   UsuarioMembresia[]
+// ── ENUMS ────────────────────────────────────────────────────────────────────
+
+enum Rol {
+  ADMIN
+  CLIENTE
 }
 
-// ── BARBERO ──
+enum EstadoCita {
+  PENDIENTE
+  CONFIRMADA
+  CANCELADA
+  COMPLETADA
+}
+
+enum EstadoMembresia {
+  ACTIVA
+  CANCELADA
+  VENCIDA
+}
+
+// ── MODELOS ───────────────────────────────────────────────────────────────────
+
+model Usuario {
+  id         Int                @id @default(autoincrement())
+  nombre     String
+  email      String             @unique
+  password   String
+  telefono   String?
+  rol        Rol                @default(CLIENTE)
+  createdAt  DateTime           @default(now())
+  citas      Cita[]
+  membresias UsuarioMembresia[]
+}
+
 model Barbero {
   id           Int      @id @default(autoincrement())
   nombre       String
@@ -39,19 +53,17 @@ model Barbero {
   citas        Cita[]
 }
 
-// ── SERVICIO ──
 model Servicio {
   id          Int            @id @default(autoincrement())
   nombre      String
   descripcion String?
   precio      Float
-  duracion    Int            // duración en minutos
+  duracion    Int
   imagen      String?
   activo      Boolean        @default(true)
   citas       CitaServicio[]
 }
 
-// ── CITA ──
 model Cita {
   id        Int            @id @default(autoincrement())
   fecha     DateTime
@@ -69,8 +81,6 @@ model Cita {
   servicios CitaServicio[]
 }
 
-// ── TABLA INTERMEDIA CITA-SERVICIO ──
-// Una cita puede tener varios servicios
 model CitaServicio {
   citaId     Int
   servicioId Int
@@ -79,20 +89,6 @@ model CitaServicio {
 
   @@id([citaId, servicioId])
 }
-
-// ── ENUMS ──
-enum Rol {
-  ADMIN
-  CLIENTE
-}
-
-enum EstadoCita {
-  PENDIENTE
-  CONFIRMADA
-  CANCELADA
-  COMPLETADA
-}
-
 
 model ImagenCarrusel {
   id          Int      @id @default(autoincrement())
@@ -131,14 +127,14 @@ model Membresia {
 }
 
 model UsuarioMembresia {
-  id            Int       @id @default(autoincrement())
-  usuarioId     Int
-  membresiaId   Int
-  fechaInicio   DateTime  @default(now())
-  fechaFin      DateTime
-  cortesUsados  Int       @default(0)
-  estado        String    @default("ACTIVA")
-  createdAt     DateTime  @default(now())
-  usuario       Usuario   @relation(fields: [usuarioId], references: [id])
-  membresia     Membresia @relation(fields: [membresiaId], references: [id])
+  id           Int             @id @default(autoincrement())
+  usuarioId    Int
+  membresiaId  Int
+  fechaInicio  DateTime        @default(now())
+  fechaFin     DateTime
+  cortesUsados Int             @default(0)
+  estado       EstadoMembresia @default(ACTIVA)
+  createdAt    DateTime        @default(now())
+  usuario      Usuario         @relation(fields: [usuarioId], references: [id])
+  membresia    Membresia       @relation(fields: [membresiaId], references: [id])
 }

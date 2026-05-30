@@ -15,32 +15,26 @@ const swaggerSpec = require('./swagger')
 const { errorHandler } = require('./middlewares/error.middleware')
 
 // ── 4. Rutas ──────────────────────────────────────────────────────────────────
-const authRoutes = require('./routes/auth.routes')
+const authRoutes      = require('./routes/auth.routes')
 const serviciosRoutes = require('./routes/servicios.routes')
-const barberosRoutes = require('./routes/barberos.routes')
-const citasRoutes = require('./routes/citas.routes')
-const imagenesRoutes = require('./routes/imagenes.routes')
+const barberosRoutes  = require('./routes/barberos.routes')
+const citasRoutes     = require('./routes/citas.routes')
+const imagenesRoutes  = require('./routes/imagenes.routes')
 const productosRoutes = require('./routes/productos.routes')
 const membresiasRoutes = require('./routes/membresias.routes')
+const usuariosRoutes  = require('./routes/usuarios.routes')
 
 // ── 5. Jobs ───────────────────────────────────────────────────────────────────
-const cancelarCitasPendientes = require('./jobs/cancelarCitas.job')
+const cancelarCitasPendientes   = require('./jobs/cancelarCitas.job')
 const { verificarMembresiasVencidas } = require('./controllers/membresias.controller')
 
 // ─────────────────────────────────────────────────────────────────────────────
 const app = express()
 
 // ── Middlewares globales ──────────────────────────────────────────────────────
-app.use(cors({
-  origin: env.CORS_ORIGIN,
-  credentials: true,
-}))
+app.use(cors({ origin: env.CORS_ORIGIN, credentials: true }))
 app.use(express.json())
-app.use(session({
-  secret: env.SESSION_SECRET,
-  resave: false,
-  saveUninitialized: false,
-}))
+app.use(session({ secret: env.SESSION_SECRET, resave: false, saveUninitialized: false }))
 app.use(passport.initialize())
 app.use(passport.session())
 
@@ -51,13 +45,14 @@ app.use('/uploads', express.static(path.join(__dirname, 'uploads')))
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec))
 
 // ── Rutas de la API ───────────────────────────────────────────────────────────
-app.use('/api/auth', authRoutes)
-app.use('/api/servicios', serviciosRoutes)
-app.use('/api/barberos', barberosRoutes)
-app.use('/api/citas', citasRoutes)
-app.use('/api/imagenes', imagenesRoutes)
-app.use('/api/productos', productosRoutes)
+app.use('/api/auth',       authRoutes)
+app.use('/api/servicios',  serviciosRoutes)
+app.use('/api/barberos',   barberosRoutes)
+app.use('/api/citas',      citasRoutes)
+app.use('/api/imagenes',   imagenesRoutes)
+app.use('/api/productos',  productosRoutes)
 app.use('/api/membresias', membresiasRoutes)
+app.use('/api/usuarios',   usuariosRoutes)
 
 // ── Health check ──────────────────────────────────────────────────────────────
 app.get('/', (req, res) => {
@@ -79,7 +74,6 @@ app.listen(PORT, () => {
   logger.info(`🚀 Servidor corriendo en http://localhost:${PORT}`)
   logger.info(`📖 Documentación en http://localhost:${PORT}/api-docs`)
 
-  // Jobs — ejecutar al arrancar y luego cada 30 minutos
   const runJobs = () => {
     cancelarCitasPendientes()
     verificarMembresiasVencidas()
