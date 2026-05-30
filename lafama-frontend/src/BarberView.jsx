@@ -305,6 +305,37 @@ const styles = `
 
   .btn-logout:hover { border-color: var(--rojo); color: var(--rojo); }
 
+  /* TABS */
+  .tabs-nav {
+    background: var(--negro2);
+    border-bottom: 1px solid rgba(255,255,255,0.04);
+    padding: 0 36px;
+    display: flex;
+    gap: 0;
+  }
+
+  .tab-btn {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: 12px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    background: none;
+    border: none;
+    color: var(--gris);
+    padding: 16px 24px;
+    cursor: pointer;
+    transition: all 0.2s;
+    border-bottom: 3px solid transparent;
+    position: relative;
+  }
+
+  .tab-btn:hover { color: var(--blanco); }
+
+  .tab-btn.active {
+    color: var(--rojo);
+    border-bottom-color: var(--rojo);
+  }
+
   /* STATS BAR */
   .stats-bar {
     background: var(--negro2);
@@ -548,6 +579,92 @@ const styles = `
     border-color: var(--verde-claro);
   }
 
+  /* CATALOGO CORTES */
+  .catalogo-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 20px;
+  }
+
+  .corte-card {
+    background: var(--negro2);
+    border: 1px solid rgba(192,57,43,0.15);
+    overflow: hidden;
+    transition: all 0.3s;
+    display: flex;
+    flex-direction: column;
+    animation: cardIn 0.4s ease;
+  }
+
+  .corte-card:hover {
+    border-color: rgba(192,57,43,0.5);
+    box-shadow: 0 8px 24px rgba(192,57,43,0.15);
+    transform: translateY(-4px);
+  }
+
+  .corte-imagen {
+    width: 100%;
+    height: 180px;
+    background: var(--negro);
+    border-bottom: 1px solid rgba(192,57,43,0.15);
+    background-size: cover;
+    background-position: center;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--gris);
+    font-size: 48px;
+  }
+
+  .corte-content {
+    padding: 20px;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .corte-nombre {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: 16px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    color: var(--blanco);
+    margin-bottom: 6px;
+  }
+
+  .corte-descripcion {
+    font-size: 12px;
+    color: var(--gris);
+    margin-bottom: 14px;
+    flex: 1;
+  }
+
+  .corte-detalles {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding-top: 12px;
+    border-top: 1px solid rgba(255,255,255,0.06);
+  }
+
+  .corte-duracion {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 11px;
+    color: var(--gris);
+    font-family: 'Barlow Condensed', sans-serif;
+    letter-spacing: 1px;
+  }
+
+  .corte-precio {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 20px;
+    color: var(--rojo);
+    letter-spacing: 1px;
+  }
+
   /* EMPTY */
   .empty-state {
     grid-column: 1 / -1;
@@ -691,7 +808,9 @@ const styles = `
     .stats-bar { padding: 0 16px; overflow-x: auto; }
     .content { padding: 20px 16px; }
     .citas-grid { grid-template-columns: 1fr; }
+    .catalogo-grid { grid-template-columns: 1fr; }
     .topbar-clock { font-size: 22px; }
+    .tabs-nav { padding: 0 16px; }
   }
 `;
 
@@ -724,10 +843,6 @@ function LoginScreen({ onLogin }) {
       const data = await res.json();
       if (!res.ok) { setError(data.error || "PIN incorrecto"); setLoading(false); return; }
       onLogin(data.barbero);
-    /*   const data = await res.json();
-      if (!res.ok) { setError(data.error || "PIN incorrecto"); setLoading(false); return; }
-      const barbero = barberos.find(b => b.id === Number(selectedBarbero));
-      onLogin(barbero); */
     } catch (e) {
       setError("Error de conexión");
     }
@@ -770,101 +885,33 @@ function LoginScreen({ onLogin }) {
         {error && <div className="error-msg">{error}</div>}
 
        <button className="btn-login" onClick={submit} disabled={loading}>
-  {loading ? "Verificando..." : "Ver mis citas"}
-</button>
+   {loading ? "Verificando..." : "Ver mis citas"}
+ </button>
 
-<button
-  onClick={() => navigate("/")}
-  style={{
-    display: "block",
-    width: "100%",
-    textAlign: "center",
-    marginTop: 16,
-    fontSize: 11,
-    letterSpacing: 3,
-    textTransform: "uppercase",
-    color: "var(--gris)",
-    background: "none",
-    border: "none",
-    cursor: "pointer",
-    fontFamily: "'Barlow Condensed', sans-serif",
-    padding: "8px 0"
-  }}
->
-  ← Volver a la página principal
-</button>
+ <button
+   onClick={() => navigate("/")}
+   style={{
+     display: "block",
+     width: "100%",
+     textAlign: "center",
+     marginTop: 16,
+     fontSize: 11,
+     letterSpacing: 3,
+     textTransform: "uppercase",
+     color: "var(--gris)",
+     background: "none",
+     border: "none",
+     cursor: "pointer",
+     fontFamily: "'Barlow Condensed', sans-serif",
+     padding: "8px 0"
+   }}
+ >
+   ← Volver a la página principal
+ </button>
       </div>
     </div>
   );
 }
-// ── LOGIN old──
-/* function LoginScreen({ onLogin }) {
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [barberos, setBarberos] = useState([]);
-  const [selectedBarbero, setSelectedBarbero] = useState("");
-  const [error, setError] = useState("");
-  const [loading, setLoading] = useState(false);
-
-  useEffect(() => {
-    fetch(`${API}/barberos`)
-      .then(r => r.json())
-      .then(setBarberos)
-      .catch(() => {});
-  }, []);
-
-  const submit = async () => {
-    if (!selectedBarbero) { setError("Selecciona tu nombre de la lista"); return; }
-    setError(""); setLoading(true);
-    try {
-      const data = await apiFetch("/auth/login", {
-        method: "POST",
-        body: JSON.stringify({ email, password })
-      });
-      localStorage.setItem("barber_token", data.token);
-      const barbero = barberos.find(b => b.id === Number(selectedBarbero));
-      onLogin(data.usuario, barbero);
-    } catch (e) {
-      setError(e.error || "Credenciales incorrectas");
-    }
-    setLoading(false);
-  };
-
-  return (
-    <div className="login-wrap">
-      <div className="login-box">
-        <div className="brand">LA <span>FAMA</span> BARBER</div>
-        <div className="brand-tag">Pantalla de Barbero</div>
-        <div className="login-title">Acceso Barbero</div>
-        <p className="login-sub">Ingresa para ver tus citas del día</p>
-
-        <label className="field-label">Selecciona tu nombre</label>
-        <select className="input" value={selectedBarbero} onChange={e => setSelectedBarbero(e.target.value)}
-          style={{ cursor: "pointer" }}>
-          <option value="">— Elige tu nombre —</option>
-          {barberos.map(b => (
-            <option key={b.id} value={b.id}>{b.nombre} · {b.especialidad}</option>
-          ))}
-        </select>
-
-        <label className="field-label">Email</label>
-        <input className="input" type="email" placeholder="tu@email.com"
-          value={email} onChange={e => setEmail(e.target.value)} />
-
-        <label className="field-label">Contraseña</label>
-        <input className="input" type="password" placeholder="••••••••"
-          value={password} onChange={e => setPassword(e.target.value)}
-          onKeyDown={e => e.key === "Enter" && submit()} />
-
-        {error && <div className="error-msg">{error}</div>}
-
-        <button className="btn-login" onClick={submit} disabled={loading}>
-          {loading ? "Verificando..." : "Ver mis citas"}
-        </button>
-      </div>
-    </div>
-  );
-} */
 
 // ── MAIN ──
 export default function BarberView() {
@@ -873,12 +920,14 @@ export default function BarberView() {
     return b ? JSON.parse(b) : null;
   });
   const [citas, setCitas] = useState([]);
+  const [servicios, setServicios] = useState([]);
   const [loading, setLoading] = useState(false);
   const [toasts, setToasts] = useState([]);
   const [nuevasCitas, setNuevasCitas] = useState(new Set());
   const [notifPermission, setNotifPermission] = useState(Notification.permission);
   const [clock, setClock] = useState(new Date());
   const [refreshProgress, setRefreshProgress] = useState(0);
+  const [activeTab, setActiveTab] = useState("citas"); // "citas" o "catalogo"
   const prevCitasRef = useRef([]);
   const intervalRef = useRef(null);
   const progressRef = useRef(null);
@@ -935,6 +984,14 @@ export default function BarberView() {
     } catch (e) {
       if (isFirst) setLoading(false);
     }
+  }, []);
+
+  // Cargar servicios
+  useEffect(() => {
+    fetch(`${API}/servicios`)
+      .then(r => r.json())
+      .then(setServicios)
+      .catch(() => {});
   }, []);
 
   // Auto-refresh cada 30 segundos
@@ -1036,8 +1093,24 @@ if (!barbero) {
           </div>
         </div>
 
+        {/* TABS */}
+        <div className="tabs-nav">
+          <button
+            className={`tab-btn ${activeTab === "citas" ? "active" : ""}`}
+            onClick={() => setActiveTab("citas")}
+          >
+            📅 Mis Citas
+          </button>
+          <button
+            className={`tab-btn ${activeTab === "catalogo" ? "active" : ""}`}
+            onClick={() => setActiveTab("catalogo")}
+          >
+            ✂️ Catálogo de Cortes
+          </button>
+        </div>
+
         {/* BANNER NOTIFICACIONES */}
-        {notifPermission === "default" && (
+        {activeTab === "citas" && notifPermission === "default" && (
           <div className="notif-banner">
             <span className="notif-banner-text">
               🔔 Activa las notificaciones del navegador para recibir alertas de nuevas citas aunque estés en otra pestaña
@@ -1047,102 +1120,153 @@ if (!barbero) {
         )}
 
         {/* STATS */}
-        <div className="stats-bar">
-          <div className="stat-item">
-            <div className="stat-num red">{citasActivas.length}</div>
-            <div className="stat-lbl">Total hoy</div>
-          </div>
-          <div className="stat-item">
-            <div className="stat-num gold">{pendientes}</div>
-            <div className="stat-lbl">Pendientes</div>
-          </div>
-          <div className="stat-item">
-            <div className="stat-num" style={{ color: "var(--verde-claro)" }}>{confirmadas}</div>
-            <div className="stat-lbl">Confirmadas</div>
-          </div>
-          <div className="stat-item">
-            <div className="stat-num blue">{completadas}</div>
-            <div className="stat-lbl">Completadas</div>
-          </div>
-          <div className="stat-item">
-            <div className="stat-num" style={{ fontSize: 22, color: "var(--verde-claro)" }}>
-              ${ingresos.toLocaleString("es-CO")}
+        {activeTab === "citas" && (
+          <div className="stats-bar">
+            <div className="stat-item">
+              <div className="stat-num red">{citasActivas.length}</div>
+              <div className="stat-lbl">Total hoy</div>
             </div>
-            <div className="stat-lbl">Ingresos del día</div>
+            <div className="stat-item">
+              <div className="stat-num gold">{pendientes}</div>
+              <div className="stat-lbl">Pendientes</div>
+            </div>
+            <div className="stat-item">
+              <div className="stat-num" style={{ color: "var(--verde-claro)" }}>{confirmadas}</div>
+              <div className="stat-lbl">Confirmadas</div>
+            </div>
+            <div className="stat-item">
+              <div className="stat-num blue">{completadas}</div>
+              <div className="stat-lbl">Completadas</div>
+            </div>
+            <div className="stat-item">
+              <div className="stat-num" style={{ fontSize: 22, color: "var(--verde-claro)" }}>
+                ${ingresos.toLocaleString("es-CO")}
+              </div>
+              <div className="stat-lbl">Ingresos del día</div>
+            </div>
           </div>
-        </div>
+        )}
 
         {/* CONTENT */}
         <div className="content">
-          <div className="content-header">
-            <div className="content-title">Citas de hoy</div>
-            <div className="refresh-info">
-              <span>Actualiza en {30 - Math.floor(refreshProgress * 30 / 100)}s</span>
-              <div className="refresh-bar">
-                <div className="refresh-bar-fill" style={{ width: `${refreshProgress}%` }} />
-              </div>
-            </div>
-          </div>
-
-          {loading ? (
-            <div className="loading"><div className="spinner" />Cargando citas...</div>
-          ) : (
-            <div className="citas-grid">
-              {citasActivas.length === 0 ? (
-                <div className="empty-state">
-                  <div className="empty-icon">✂️</div>
-                  <div className="empty-title">Sin citas por ahora</div>
-                  <p className="empty-sub">Las citas aparecerán aquí automáticamente cuando sean agendadas</p>
+          {activeTab === "citas" && (
+            <>
+              <div className="content-header">
+                <div className="content-title">Citas de hoy</div>
+                <div className="refresh-info">
+                  <span>Actualiza en {30 - Math.floor(refreshProgress * 30 / 100)}s</span>
+                  <div className="refresh-bar">
+                    <div className="refresh-bar-fill" style={{ width: `${refreshProgress}%` }} />
+                  </div>
                 </div>
+              </div>
+
+              {loading ? (
+                <div className="loading"><div className="spinner" />Cargando citas...</div>
               ) : (
-                citasActivas.map(c => {
-                  const total = c.servicios?.reduce((s, x) => s + (x.servicio?.precio || 0), 0);
-                  const esNueva = nuevasCitas.has(c.id);
-                  return (
-                    <div key={c.id} className={`cita-card ${esNueva ? "nueva" : ""}`}>
-                      <div className="cita-card-top">
-                        <div className="cita-hora">{c.hora}</div>
-                        <div className="cita-estado-wrap">
-                          {esNueva && <span className="badge-nueva">● Nueva</span>}
-                          <span className={`badge badge-${c.estado}`}>{c.estado}</span>
-                        </div>
-                      </div>
-                      <div className="cita-card-body">
-                        <div className="cita-cliente">{c.usuario?.nombre}</div>
-                        <div className="cita-servicios">
-                          {c.servicios?.map(s => (
-                            <span key={s.servicio?.id} className="servicio-tag">{s.servicio?.nombre}</span>
-                          ))}
-                        </div>
-                        {c.usuario?.telefono && (
-                          <div className="cita-info">📞 <strong>{c.usuario.telefono}</strong></div>
-                        )}
-                        {c.nota && (
-                          <div className="cita-info">📝 {c.nota}</div>
-                        )}
-                        <div className="cita-total">${total?.toLocaleString("es-CO")}</div>
-                      </div>
-                      {(c.estado === "PENDIENTE" || c.estado === "CONFIRMADA") && (
-                        <div className="cita-card-footer">
-                          {c.estado === "PENDIENTE" && (
-                            <button className="btn-action btn-completar"
-                              onClick={() => cambiarEstado(c.id, "CONFIRMADA")}>
-                              Confirmar
-                            </button>
-                          )}
-                          {c.estado === "CONFIRMADA" && (
-                            <button className="btn-action btn-completar"
-                              onClick={() => cambiarEstado(c.id, "COMPLETADA")}>
-                              ✓ Marcar completada
-                            </button>
-                          )}
-                        </div>
-                      )}
+                <div className="citas-grid">
+                  {citasActivas.length === 0 ? (
+                    <div className="empty-state">
+                      <div className="empty-icon">✂️</div>
+                      <div className="empty-title">Sin citas por ahora</div>
+                      <p className="empty-sub">Las citas aparecerán aquí automáticamente cuando sean agendadas</p>
                     </div>
-                  );
-                })
+                  ) : (
+                    citasActivas.map(c => {
+                      const total = c.servicios?.reduce((s, x) => s + (x.servicio?.precio || 0), 0);
+                      const esNueva = nuevasCitas.has(c.id);
+                      return (
+                        <div key={c.id} className={`cita-card ${esNueva ? "nueva" : ""}`}>
+                          <div className="cita-card-top">
+                            <div className="cita-hora">{c.hora}</div>
+                            <div className="cita-estado-wrap">
+                              {esNueva && <span className="badge-nueva">● Nueva</span>}
+                              <span className={`badge badge-${c.estado}`}>{c.estado}</span>
+                            </div>
+                          </div>
+                          <div className="cita-card-body">
+                            <div className="cita-cliente">{c.usuario?.nombre}</div>
+                            <div className="cita-servicios">
+                              {c.servicios?.map(s => (
+                                <span key={s.servicio?.id} className="servicio-tag">{s.servicio?.nombre}</span>
+                              ))}
+                            </div>
+                            {c.usuario?.telefono && (
+                              <div className="cita-info">📞 <strong>{c.usuario.telefono}</strong></div>
+                            )}
+                            {c.nota && (
+                              <div className="cita-info">📝 {c.nota}</div>
+                            )}
+                            <div className="cita-total">${total?.toLocaleString("es-CO")}</div>
+                          </div>
+                          {(c.estado === "PENDIENTE" || c.estado === "CONFIRMADA") && (
+                            <div className="cita-card-footer">
+                              {c.estado === "PENDIENTE" && (
+                                <button className="btn-action btn-completar"
+                                  onClick={() => cambiarEstado(c.id, "CONFIRMADA")}>
+                                  Confirmar
+                                </button>
+                              )}
+                              {c.estado === "CONFIRMADA" && (
+                                <button className="btn-action btn-completar"
+                                  onClick={() => cambiarEstado(c.id, "COMPLETADA")}>
+                                  ✓ Marcar completada
+                                </button>
+                              )}
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })
+                  )}
+                </div>
               )}
-            </div>
+            </>
+          )}
+
+          {activeTab === "catalogo" && (
+            <>
+              <div className="content-header">
+                <div className="content-title">Catálogo de Cortes</div>
+              </div>
+
+              {servicios.length === 0 ? (
+                <div className="loading"><div className="spinner" />Cargando catálogo...</div>
+              ) : (
+                <div className="catalogo-grid">
+                  {servicios.map(corte => (
+                    <div key={corte.id} className="corte-card">
+                      <div
+                        className="corte-imagen"
+                        style={corte.imagen ? {
+                          backgroundImage: `url(${corte.imagen.startsWith('/') ? 'http://localhost:3000' + corte.imagen : corte.imagen})`
+                        } : {}}
+                      >
+                        {!corte.imagen && '✂️'}
+                      </div>
+
+                      <div className="corte-content">
+                        <h3 className="corte-nombre">{corte.nombre}</h3>
+                        
+                        {corte.descripcion && (
+                          <p className="corte-descripcion">{corte.descripcion}</p>
+                        )}
+
+                        <div className="corte-detalles">
+                          <div className="corte-duracion">
+                            <span>⏱️</span>
+                            <span>{corte.duracion} min</span>
+                          </div>
+                          <div className="corte-precio">
+                            ${Number(corte.precio).toLocaleString('es-CO')}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </>
           )}
         </div>
       </div>
