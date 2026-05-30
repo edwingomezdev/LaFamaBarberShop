@@ -25,6 +25,7 @@ enum EstadoMembresia {
   ACTIVA
   CANCELADA
   VENCIDA
+  AGOTADA
 }
 
 // ── MODELOS ───────────────────────────────────────────────────────────────────

@@ -76,9 +76,17 @@ app.listen(PORT, () => {
   logger.info(`🚀 Servidor corriendo en http://localhost:${PORT}`)
   logger.info(`📖 Documentación en http://localhost:${PORT}/api-docs`)
 
-  const runJobs = () => {
-    cancelarCitasPendientes()
-    verificarMembresiasVencidas()
+  const runJobs = async () => {
+    const results = await Promise.allSettled([
+      cancelarCitasPendientes(),
+      verificarMembresiasVencidas(),
+    ])
+
+    results.forEach((result) => {
+      if (result.status === 'rejected') {
+        logger.error({ err: result.reason }, 'Error ejecutando jobs programados')
+      }
+    })
   }
   runJobs()
   setInterval(runJobs, 30 * 60 * 1000)
