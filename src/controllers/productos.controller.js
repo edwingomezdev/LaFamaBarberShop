@@ -1,56 +1,22 @@
-const prisma = require('../prisma')
+const productosService = require('../services/productos.service')
 
-const obtenerProductos = async (req, res) => {
-  try {
-    const productos = await prisma.producto.findMany({
-      where: { activo: true },
-      orderBy: { createdAt: 'asc' }
-    })
-    res.json(productos)
-  } catch (e) {
-    console.error(e)
-    res.status(500).json({ error: 'Error interno' })
-  }
+const obtenerProductos = async (req, res, next) => {
+  try { res.json(await productosService.listar()) } catch (err) { next(err) }
 }
 
-const crearProducto = async (req, res) => {
-  try {
-    const { nombre, descripcion, precio, imagen, categoria, badge, stock } = req.body
-    const producto = await prisma.producto.create({
-      data: { nombre, descripcion, precio: Number(precio), imagen, categoria, badge, stock: Number(stock) || 0 }
-    })
-    res.status(201).json(producto)
-  } catch (e) {
-    console.error(e)
-    res.status(500).json({ error: 'Error interno' })
-  }
+const crearProducto = async (req, res, next) => {
+  try { res.status(201).json(await productosService.crear(req.body)) } catch (err) { next(err) }
 }
 
-const actualizarProducto = async (req, res) => {
-  try {
-    const { nombre, descripcion, precio, imagen, categoria, badge, stock, activo } = req.body
-    const producto = await prisma.producto.update({
-      where: { id: Number(req.params.id) },
-      data: { nombre, descripcion, precio: Number(precio), imagen, categoria, badge, stock: Number(stock), activo }
-    })
-    res.json(producto)
-  } catch (e) {
-    console.error(e)
-    res.status(500).json({ error: 'Error interno' })
-  }
+const actualizarProducto = async (req, res, next) => {
+  try { res.json(await productosService.actualizar(req.params.id, req.body)) } catch (err) { next(err) }
 }
 
-const eliminarProducto = async (req, res) => {
+const eliminarProducto = async (req, res, next) => {
   try {
-    await prisma.producto.update({
-      where: { id: Number(req.params.id) },
-      data: { activo: false }
-    })
+    await productosService.eliminar(req.params.id)
     res.json({ mensaje: 'Producto eliminado' })
-  } catch (e) {
-    console.error(e)
-    res.status(500).json({ error: 'Error interno' })
-  }
+  } catch (err) { next(err) }
 }
 
 module.exports = { obtenerProductos, crearProducto, actualizarProducto, eliminarProducto }
