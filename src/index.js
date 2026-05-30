@@ -1,35 +1,20 @@
+// ── 1. Variables de entorno (valida y aborta si faltan) ──────────────────────
+const env = require('./config/env')
+
+// ── 2. Dependencias externas ──────────────────────────────────────────────────
 const express = require('express')
 const cors = require('cors')
-const dotenv = require('dotenv')
+const path = require('path')
 const swaggerUi = require('swagger-ui-express')
-const swaggerSpec = require('./swagger')
-
-dotenv.config()
-
-const app = express()
-
 const session = require('express-session')
+
+// ── 3. Config interna ─────────────────────────────────────────────────────────
+const logger = require('./config/logger')
 const passport = require('./config/passport')
+const swaggerSpec = require('./swagger')
+const { errorHandler } = require('./middlewares/error.middleware')
 
-app.use(session({
-  secret: process.env.SESSION_SECRET,
-  resave: false,
-  saveUninitialized: false
-}))
-
-app.use(passport.initialize())
-app.use(passport.session())
-
-
-const PORT = process.env.PORT || 3000
-
-app.use(cors())
-app.use(express.json())
-
-// ── DOCUMENTACIÓN ──
-app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec))
-
-// ── RUTAS ──
+// ── 4. Rutas ──────────────────────────────────────────────────────────────────
 const authRoutes = require('./routes/auth.routes')
 const serviciosRoutes = require('./routes/servicios.routes')
 const barberosRoutes = require('./routes/barberos.routes')
@@ -37,8 +22,35 @@ const citasRoutes = require('./routes/citas.routes')
 const imagenesRoutes = require('./routes/imagenes.routes')
 const productosRoutes = require('./routes/productos.routes')
 const membresiasRoutes = require('./routes/membresias.routes')
-//const usuariosRoutes = require('./routes/usuarios.routes')
 
+// ── 5. Jobs ───────────────────────────────────────────────────────────────────
+const cancelarCitasPendientes = require('./jobs/cancelarCitas.job')
+const { verificarMembresiasVencidas } = require('./controllers/membresias.controller')
+
+// ─────────────────────────────────────────────────────────────────────────────
+const app = express()
+
+// ── Middlewares globales ──────────────────────────────────────────────────────
+app.use(cors({
+  origin: env.CORS_ORIGIN,
+  credentials: true,
+}))
+app.use(express.json())
+app.use(session({
+  secret: env.SESSION_SECRET,
+  resave: false,
+  saveUninitialized: false,
+}))
+app.use(passport.initialize())
+app.use(passport.session())
+
+// ── Archivos estáticos ────────────────────────────────────────────────────────
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')))
+
+// ── Documentación ─────────────────────────────────────────────────────────────
+app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec))
+
+// ── Rutas de la API ───────────────────────────────────────────────────────────
 app.use('/api/auth', authRoutes)
 app.use('/api/servicios', serviciosRoutes)
 app.use('/api/barberos', barberosRoutes)
@@ -46,41 +58,43 @@ app.use('/api/citas', citasRoutes)
 app.use('/api/imagenes', imagenesRoutes)
 app.use('/api/productos', productosRoutes)
 app.use('/api/membresias', membresiasRoutes)
-//app.use('/api/usuarios', usuariosRoutes)
-app.use('/uploads', express.static(require('path').join(__dirname, 'uploads')))
 
-// ── MIDDLEWARE DE PRUEBA ──
-const { verificarToken } = require('./middlewares/auth.middleware')
-app.get('/api/perfil', verificarToken, (req, res) => {
-  res.json({ mensaje: 'Acceso permitido', usuario: req.usuario })
-})
-
-
-
+// ── Health check ──────────────────────────────────────────────────────────────
 app.get('/', (req, res) => {
   res.json({
-    mensaje: '💈 Bienvenido a la API de Barbería',
+    app: 'La Fama Barber Shop API',
     version: '1.0.0',
-    estado: 'funcionando',
-    docs: 'http://localhost:3000/api-docs'
+    status: 'ok',
+    docs: `http://localhost:${env.PORT}/api-docs`,
   })
 })
 
+// ── Manejo de errores (siempre al final) ──────────────────────────────────────
+app.use(errorHandler)
 
-const cancelarCitasPendientes = require('./jobs/cancelarCitas.job')
-const { verificarMembresiasVencidas } = require('./controllers/membresias.controller')
-
-// Ejecutar al arrancar
-cancelarCitasPendientes()
-verificarMembresiasVencidas()
-
-// Ejecutar cada 30 minutos
-setInterval(() => {
-  cancelarCitasPendientes()
-  verificarMembresiasVencidas()
-}, 30 * 60 * 1000)
+// ── Arranque ──────────────────────────────────────────────────────────────────
+const PORT = Number(env.PORT)
 
 app.listen(PORT, () => {
-  console.log(`🚀 Servidor corriendo en http://localhost:${PORT}`)
-  console.log(` Documentación en http://localhost:${PORT}/api-docs`)
+  logger.info(`🚀 Servidor corriendo en http://localhost:${PORT}`)
+  logger.info(`📖 Documentación en http://localhost:${PORT}/api-docs`)
+
+  // Jobs — ejecutar al arrancar y luego cada 30 minutos
+  const runJobs = () => {
+    cancelarCitasPendientes()
+    verificarMembresiasVencidas()
+  }
+  runJobs()
+  setInterval(runJobs, 30 * 60 * 1000)
+})
+
+// ── Manejo de errores no capturados ──────────────────────────────────────────
+process.on('uncaughtException', (err) => {
+  logger.error({ err }, 'uncaughtException — cerrando proceso')
+  process.exit(1)
+})
+
+process.on('unhandledRejection', (reason) => {
+  logger.error({ reason }, 'unhandledRejection — cerrando proceso')
+  process.exit(1)
 })
