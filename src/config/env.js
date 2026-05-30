@@ -1,3 +1,4 @@
+require('dotenv/config')
 const { z } = require('zod')
 
 const envSchema = z.object({
@@ -14,7 +15,7 @@ const envSchema = z.object({
 const _parsed = envSchema.safeParse(process.env)
 
 if (!_parsed.success) {
-  const errors = _parsed.error.errors
+  const errors = (_parsed.error.issues || [])
     .map(e => `  - ${e.path.join('.')}: ${e.message}`)
     .join('\n')
   console.error(`\n❌ Variables de entorno inválidas:\n${errors}\n`)
