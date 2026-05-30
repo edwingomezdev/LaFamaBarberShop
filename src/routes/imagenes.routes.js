@@ -8,7 +8,8 @@ const {
   crearImagenCarrusel,
   actualizarImagenCarrusel,
   eliminarImagenCarrusel,
-  actualizarImagenServicio
+  actualizarImagenServicio,
+  actualizarImagenEstiloCorte
 } = require('../controllers/imagenes.controller')
 
 // Configurar multer
@@ -40,6 +41,9 @@ router.delete('/carrusel/:id', verificarToken, soloAdmin, eliminarImagenCarrusel
 
 // Servicios
 router.put('/servicios/:id', verificarToken, soloAdmin, upload.single('imagen'), actualizarImagenServicio)
+
+// Estilos de cortes
+router.put('/estilos-cortes/:id', verificarToken, soloAdmin, upload.single('imagen'), actualizarImagenEstiloCorte)
 
 // Foto barbero
 router.put('/barberos/:id', verificarToken, soloAdmin, upload.single('imagen'), async (req, res) => {

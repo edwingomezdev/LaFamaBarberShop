@@ -31,4 +31,9 @@ const actualizarImagenServicio = (id, { url, file }) => {
   return prisma.servicio.update({ where: { id: Number(id) }, data: { imagen: imageUrl } })
 }
 
-module.exports = { listarCarrusel, crearImagen, actualizarImagen, eliminarImagen, actualizarImagenServicio }
+const actualizarImagenEstiloCorte = (id, { url, file }) => {
+  const imageUrl = file ? `/uploads/${file.filename}` : url
+  return prisma.estiloCorte.update({ where: { id: Number(id) }, data: { imagen: imageUrl } })
+}
+
+module.exports = { listarCarrusel, crearImagen, actualizarImagen, eliminarImagen, actualizarImagenServicio, actualizarImagenEstiloCorte }

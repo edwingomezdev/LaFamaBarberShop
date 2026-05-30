@@ -27,4 +27,17 @@ const actualizarImagenServicio = async (req, res, next) => {
   } catch (err) { next(err) }
 }
 
-module.exports = { obtenerCarrusel, crearImagenCarrusel, actualizarImagenCarrusel, eliminarImagenCarrusel, actualizarImagenServicio }
+const actualizarImagenEstiloCorte = async (req, res, next) => {
+  try {
+    res.json(await imagenesService.actualizarImagenEstiloCorte(req.params.id, { ...req.body, file: req.file }))
+  } catch (err) { next(err) }
+}
+
+module.exports = {
+  obtenerCarrusel,
+  crearImagenCarrusel,
+  actualizarImagenCarrusel,
+  eliminarImagenCarrusel,
+  actualizarImagenServicio,
+  actualizarImagenEstiloCorte,
+}

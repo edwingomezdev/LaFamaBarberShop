@@ -1200,6 +1200,8 @@ function EstilosCortesPanel({ estilos, onRefresh }) {
   const [showModal, setShowModal] = useState(false);
   const [editing, setEditing] = useState(null);
   const [form, setForm] = useState({ nombre: "", descripcion: "", imagen: "", categoria: "" });
+  const [archivo, setArchivo] = useState(null);
+  const [preview, setPreview] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
@@ -1211,6 +1213,8 @@ function EstilosCortesPanel({ estilos, onRefresh }) {
   const openCreate = () => {
     setEditing(null);
     setForm({ nombre: "", descripcion: "", imagen: "", categoria: "" });
+    setArchivo(null);
+    setPreview("");
     setError("");
     setShowModal(true);
   };
@@ -1223,8 +1227,18 @@ function EstilosCortesPanel({ estilos, onRefresh }) {
       imagen: estilo.imagen || "",
       categoria: estilo.categoria || "",
     });
+    setArchivo(null);
+    setPreview(estilo.imagen || "");
     setError("");
     setShowModal(true);
+  };
+
+  const handleArchivo = (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setArchivo(file);
+    setPreview(URL.createObjectURL(file));
+    setForm(p => ({ ...p, imagen: "" }));
   };
 
   const save = async () => {
@@ -1241,10 +1255,24 @@ function EstilosCortesPanel({ estilos, onRefresh }) {
         imagen: form.imagen || null,
         categoria: form.categoria || null,
       };
+      let saved;
       if (editing) {
-        await apiFetch(`/estilos-cortes/${editing.id}`, { method: "PUT", body: JSON.stringify(body) });
+        saved = await apiFetch(`/estilos-cortes/${editing.id}`, { method: "PUT", body: JSON.stringify(body) });
       } else {
-        await apiFetch("/estilos-cortes", { method: "POST", body: JSON.stringify(body) });
+        saved = await apiFetch("/estilos-cortes", { method: "POST", body: JSON.stringify(body) });
+      }
+
+      if (archivo) {
+        const fd = new FormData();
+        fd.append("imagen", archivo);
+        const token = getToken();
+        const res = await fetch(`${API}/imagenes/estilos-cortes/${saved.id}`, {
+          method: "PUT",
+          headers: { Authorization: `Bearer ${token}` },
+          body: fd,
+        });
+        const data = await res.json();
+        if (!res.ok) throw data;
       }
       setShowModal(false);
       onRefresh();
@@ -1327,9 +1355,11 @@ function EstilosCortesPanel({ estilos, onRefresh }) {
             <label className="field-label">Descripcion</label>
             <textarea className="input" rows={4} value={form.descripcion} onChange={e => setForm(p => ({ ...p, descripcion: e.target.value }))} style={{ resize: "none" }} />
             <label className="field-label">Imagen (URL)</label>
-            <input className="input" placeholder="https://..." value={form.imagen} onChange={e => setForm(p => ({ ...p, imagen: e.target.value }))} />
-            {form.imagen && (
-              <div style={{ width: "100%", height: 130, backgroundImage: `url(${getImageUrl(form.imagen)})`, backgroundSize: "cover", backgroundPosition: "center", marginTop: 8, border: "1px solid rgba(255,255,255,0.08)" }} />
+            <input className="input" placeholder="https://..." value={form.imagen} onChange={e => { setForm(p => ({ ...p, imagen: e.target.value })); setArchivo(null); setPreview(e.target.value); }} />
+            <label className="field-label">O subir desde computador</label>
+            <input type="file" accept="image/*" onChange={handleArchivo} style={{ color: "var(--gris)", fontSize: 12, marginTop: 4 }} />
+            {(preview || form.imagen) && (
+              <div style={{ width: "100%", height: 130, backgroundImage: `url(${getImageUrl(preview || form.imagen)})`, backgroundSize: "cover", backgroundPosition: "center", marginTop: 8, border: "1px solid rgba(255,255,255,0.08)" }} />
             )}
             {error && <div className="error-msg">{error}</div>}
             <div className="modal-actions">
