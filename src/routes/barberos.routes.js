@@ -1,7 +1,9 @@
 const express = require('express')
 const router = express.Router()
 const prisma = require('../prisma')
-const bcrypt = require('bcrypt')
+const bcrypt = require('bcryptjs')
+const jwt = require('jsonwebtoken')
+const env = require('../config/env')
 const {
   obtenerBarberos,
   obtenerBarbero,
@@ -62,6 +64,11 @@ router.post('/login', async (req, res) => {
 
     res.json({
       mensaje: 'Acceso concedido',
+      token: jwt.sign(
+        { barberoId: barbero.id, tipo: 'BARBERO' },
+        env.JWT_SECRET,
+        { expiresIn: '12h' }
+      ),
       barbero: {
         id: barbero.id,
         nombre: barbero.nombre,

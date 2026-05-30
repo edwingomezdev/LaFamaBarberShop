@@ -64,6 +64,16 @@ model Servicio {
   citas       CitaServicio[]
 }
 
+model EstiloCorte {
+  id          Int      @id @default(autoincrement())
+  nombre      String
+  descripcion String?
+  imagen      String?
+  categoria   String?
+  activo      Boolean  @default(true)
+  createdAt   DateTime @default(now())
+}
+
 model Cita {
   id        Int            @id @default(autoincrement())
   fecha     DateTime

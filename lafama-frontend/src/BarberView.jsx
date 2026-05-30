@@ -424,6 +424,34 @@ const styles = `
     gap: 12px;
   }
 
+  .citas-list {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .citas-list .cita-card {
+    display: grid;
+    grid-template-columns: 170px 1fr auto;
+    align-items: stretch;
+  }
+
+  .citas-list .cita-card-top {
+    padding: 18px 20px;
+    border-right: 1px solid rgba(255,255,255,0.05);
+  }
+
+  .citas-list .cita-card-body {
+    padding: 18px 20px;
+  }
+
+  .citas-list .cita-card-footer {
+    min-width: 190px;
+    border-top: none;
+    border-left: 1px solid rgba(255,255,255,0.04);
+    align-items: center;
+  }
+
   /* CITA CARD */
   .cita-card {
     background: var(--negro2);
@@ -808,6 +836,9 @@ const styles = `
     .stats-bar { padding: 0 16px; overflow-x: auto; }
     .content { padding: 20px 16px; }
     .citas-grid { grid-template-columns: 1fr; }
+    .citas-list .cita-card { grid-template-columns: 1fr; }
+    .citas-list .cita-card-top { border-right: none; padding-bottom: 0; }
+    .citas-list .cita-card-footer { border-left: none; border-top: 1px solid rgba(255,255,255,0.04); }
     .catalogo-grid { grid-template-columns: 1fr; }
     .topbar-clock { font-size: 22px; }
     .tabs-nav { padding: 0 16px; }
@@ -842,7 +873,7 @@ function LoginScreen({ onLogin }) {
       });
       const data = await res.json();
       if (!res.ok) { setError(data.error || "PIN incorrecto"); setLoading(false); return; }
-      onLogin(data.barbero);
+      onLogin(data.barbero, data.token);
     } catch (e) {
       setError("Error de conexión");
     }
@@ -921,13 +952,14 @@ export default function BarberView() {
   });
   const [citas, setCitas] = useState([]);
   const [servicios, setServicios] = useState([]);
+  const [estilosCortes, setEstilosCortes] = useState([]);
   const [loading, setLoading] = useState(false);
   const [toasts, setToasts] = useState([]);
   const [nuevasCitas, setNuevasCitas] = useState(new Set());
   const [notifPermission, setNotifPermission] = useState(Notification.permission);
   const [clock, setClock] = useState(new Date());
   const [refreshProgress, setRefreshProgress] = useState(0);
-  const [activeTab, setActiveTab] = useState("citas"); // "citas" o "catalogo"
+  const [activeTab, setActiveTab] = useState("citas");
   const prevCitasRef = useRef([]);
   const intervalRef = useRef(null);
   const progressRef = useRef(null);
@@ -994,12 +1026,22 @@ export default function BarberView() {
       .catch(() => {});
   }, []);
 
+  const loadEstilosCortes = useCallback(async () => {
+    try {
+      const data = await apiFetch("/estilos-cortes");
+      setEstilosCortes(data);
+    } catch (e) {
+      setEstilosCortes([]);
+    }
+  }, []);
+
   // Auto-refresh cada 30 segundos
   useEffect(() => {
     if (!barbero) return;
 
     setLoading(true);
     loadCitas(barbero.id, true);
+    loadEstilosCortes();
 
     // Barra de progreso
     let progress = 0;
@@ -1018,7 +1060,7 @@ export default function BarberView() {
       clearInterval(intervalRef.current);
       clearInterval(progressRef.current);
     };
-  }, [barbero, loadCitas]);
+  }, [barbero, loadCitas, loadEstilosCortes]);
 
   const requestNotifPermission = async () => {
     const perm = await Notification.requestPermission();
@@ -1028,13 +1070,14 @@ export default function BarberView() {
  const cambiarEstado = async (citaId, estado) => {
   try {
     playAlertSound();
-    await fetch(`${API}/citas/barbero/${citaId}/estado`, {
+    await apiFetch(`/citas/barbero/${citaId}/estado`, {
       method: "PUT",
-      headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ estado })
     });
     loadCitas(barbero.id, false);
-  } catch (e) {}
+  } catch (e) {
+    addToast({ usuario: { nombre: e.error || "No se pudo actualizar la cita" }, hora: "", servicios: [] });
+  }
 };
   const logout = () => {
   localStorage.removeItem("barber_token");
@@ -1047,7 +1090,8 @@ if (!barbero) {
     return (
       <>
         <style>{styles}</style>
-        <LoginScreen onLogin={(b) => {
+        <LoginScreen onLogin={(b, token) => {
+          localStorage.setItem("barber_token", token);
           localStorage.setItem("barbero", JSON.stringify(b));
           setBarbero(b);
           setTimeout(() => window.location.reload(), 100);
@@ -1107,6 +1151,12 @@ if (!barbero) {
           >
             ✂️ Catálogo de Cortes
           </button>
+          <button
+            className={`tab-btn ${activeTab === "estilos" ? "active" : ""}`}
+            onClick={() => setActiveTab("estilos")}
+          >
+            Estilos
+          </button>
         </div>
 
         {/* BANNER NOTIFICACIONES */}
@@ -1164,7 +1214,7 @@ if (!barbero) {
               {loading ? (
                 <div className="loading"><div className="spinner" />Cargando citas...</div>
               ) : (
-                <div className="citas-grid">
+                <div className="citas-list">
                   {citasActivas.length === 0 ? (
                     <div className="empty-state">
                       <div className="empty-icon">✂️</div>
@@ -1261,6 +1311,48 @@ if (!barbero) {
                             ${Number(corte.precio).toLocaleString('es-CO')}
                           </div>
                         </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </>
+          )}
+
+          {activeTab === "estilos" && (
+            <>
+              <div className="content-header">
+                <div className="content-title">Estilos de Cortes</div>
+              </div>
+
+              {estilosCortes.length === 0 ? (
+                <div className="empty-state">
+                  <div className="empty-title">Sin estilos publicados</div>
+                  <p className="empty-sub">El admin puede agregarlos desde el panel de administracion</p>
+                </div>
+              ) : (
+                <div className="catalogo-grid">
+                  {estilosCortes.map(estilo => (
+                    <div key={estilo.id} className="corte-card">
+                      <div
+                        className="corte-imagen"
+                        style={estilo.imagen ? {
+                          backgroundImage: `url(${estilo.imagen.startsWith('/') ? 'http://localhost:3000' + estilo.imagen : estilo.imagen})`
+                        } : {}}
+                      >
+                        {!estilo.imagen && 'ESTILO'}
+                      </div>
+
+                      <div className="corte-content">
+                        {estilo.categoria && (
+                          <div style={{ fontSize: 10, letterSpacing: 2, textTransform: "uppercase", color: "var(--rojo)", marginBottom: 8, fontFamily: "'Barlow Condensed', sans-serif" }}>
+                            {estilo.categoria}
+                          </div>
+                        )}
+                        <h3 className="corte-nombre">{estilo.nombre}</h3>
+                        {estilo.descripcion && (
+                          <p className="corte-descripcion">{estilo.descripcion}</p>
+                        )}
                       </div>
                     </div>
                   ))}

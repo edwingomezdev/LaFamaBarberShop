@@ -1195,6 +1195,154 @@ function ServiciosPanel({ servicios, onRefresh }) {
 }
 
 // ── BARBEROS ──
+// Estilos de cortes visibles para barberos y administrados solo por admin
+function EstilosCortesPanel({ estilos, onRefresh }) {
+  const [showModal, setShowModal] = useState(false);
+  const [editing, setEditing] = useState(null);
+  const [form, setForm] = useState({ nombre: "", descripcion: "", imagen: "", categoria: "" });
+  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
+
+  const getImageUrl = (img) => {
+    if (!img) return "";
+    return img.startsWith("/") ? "http://localhost:3000" + img : img;
+  };
+
+  const openCreate = () => {
+    setEditing(null);
+    setForm({ nombre: "", descripcion: "", imagen: "", categoria: "" });
+    setError("");
+    setShowModal(true);
+  };
+
+  const openEdit = (estilo) => {
+    setEditing(estilo);
+    setForm({
+      nombre: estilo.nombre || "",
+      descripcion: estilo.descripcion || "",
+      imagen: estilo.imagen || "",
+      categoria: estilo.categoria || "",
+    });
+    setError("");
+    setShowModal(true);
+  };
+
+  const save = async () => {
+    if (!form.nombre.trim()) {
+      setError("El nombre es obligatorio");
+      return;
+    }
+    setLoading(true);
+    setError("");
+    try {
+      const body = {
+        nombre: form.nombre,
+        descripcion: form.descripcion,
+        imagen: form.imagen || null,
+        categoria: form.categoria || null,
+      };
+      if (editing) {
+        await apiFetch(`/estilos-cortes/${editing.id}`, { method: "PUT", body: JSON.stringify(body) });
+      } else {
+        await apiFetch("/estilos-cortes", { method: "POST", body: JSON.stringify(body) });
+      }
+      setShowModal(false);
+      onRefresh();
+    } catch (e) {
+      setError(e.error || "No se pudo guardar el estilo");
+    }
+    setLoading(false);
+  };
+
+  const eliminar = async (id) => {
+    if (!confirm("Eliminar este estilo de corte?")) return;
+    try {
+      await apiFetch(`/estilos-cortes/${id}`, { method: "DELETE" });
+      onRefresh();
+    } catch (e) {
+      setError(e.error || "No se pudo eliminar el estilo");
+    }
+  };
+
+  return (
+    <div>
+      <div className="section-header">
+        <div>
+          <div className="section-title">Estilos de Cortes</div>
+          <div style={{ fontSize: 12, color: "var(--gris)", marginTop: 4 }}>
+            Este catalogo lo ve el barbero; solo el admin puede crearlo o modificarlo.
+          </div>
+        </div>
+        <button className="btn-primary" onClick={openCreate}>+ Nuevo Estilo</button>
+      </div>
+
+      <div className="cards-grid">
+        {estilos.map(estilo => (
+          <div key={estilo.id} className="item-card">
+            <div
+              style={{
+                height: 170,
+                backgroundImage: estilo.imagen ? `url(${getImageUrl(estilo.imagen)})` : "none",
+                backgroundSize: "cover",
+                backgroundPosition: "center",
+                backgroundColor: "var(--negro3)",
+                border: "1px solid rgba(255,255,255,0.06)",
+                marginBottom: 14,
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                color: "var(--gris)",
+                fontSize: 11,
+                letterSpacing: 2,
+                fontFamily: "'Barlow Condensed', sans-serif",
+              }}
+            >
+              {!estilo.imagen && "SIN IMAGEN"}
+            </div>
+            {estilo.categoria && (
+              <div style={{ fontSize: 9, letterSpacing: 2, textTransform: "uppercase", color: "var(--rojo)", marginBottom: 6, fontFamily: "'Barlow Condensed', sans-serif" }}>
+                {estilo.categoria}
+              </div>
+            )}
+            <div className="item-card-name">{estilo.nombre}</div>
+            <div className="item-card-sub">{estilo.descripcion || "Sin descripcion"}</div>
+            <div className="item-card-actions">
+              <button className="btn-sm btn-edit" onClick={() => openEdit(estilo)}>Editar</button>
+              <button className="btn-sm btn-delete" onClick={() => eliminar(estilo.id)}>Eliminar</button>
+            </div>
+          </div>
+        ))}
+        {estilos.length === 0 && <div className="empty">No hay estilos de corte creados.</div>}
+      </div>
+
+      {showModal && (
+        <div className="modal-overlay" onClick={() => setShowModal(false)}>
+          <div className="modal" onClick={e => e.stopPropagation()}>
+            <button className="modal-close" onClick={() => setShowModal(false)}>x</button>
+            <div className="modal-title">{editing ? "Editar Estilo" : "Nuevo Estilo"}</div>
+            <label className="field-label">Nombre</label>
+            <input className="input" value={form.nombre} onChange={e => setForm(p => ({ ...p, nombre: e.target.value }))} />
+            <label className="field-label">Categoria</label>
+            <input className="input" placeholder="Fade, Clasico, Barba..." value={form.categoria} onChange={e => setForm(p => ({ ...p, categoria: e.target.value }))} />
+            <label className="field-label">Descripcion</label>
+            <textarea className="input" rows={4} value={form.descripcion} onChange={e => setForm(p => ({ ...p, descripcion: e.target.value }))} style={{ resize: "none" }} />
+            <label className="field-label">Imagen (URL)</label>
+            <input className="input" placeholder="https://..." value={form.imagen} onChange={e => setForm(p => ({ ...p, imagen: e.target.value }))} />
+            {form.imagen && (
+              <div style={{ width: "100%", height: 130, backgroundImage: `url(${getImageUrl(form.imagen)})`, backgroundSize: "cover", backgroundPosition: "center", marginTop: 8, border: "1px solid rgba(255,255,255,0.08)" }} />
+            )}
+            {error && <div className="error-msg">{error}</div>}
+            <div className="modal-actions">
+              <button className="btn-full secondary" onClick={() => setShowModal(false)}>Cancelar</button>
+              <button className="btn-full primary" onClick={save} disabled={loading}>{loading ? "Guardando..." : "Guardar"}</button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 /* function BarberosPanel({ barberos, onRefresh }) {
   const [showModal, setShowModal] = useState(false);
   const [editing, setEditing] = useState(null);
@@ -2119,6 +2267,7 @@ export default function AdminPanel() {
   const [page, setPage] = useState("dashboard");
   const [citas, setCitas] = useState([]);
   const [servicios, setServicios] = useState([]);
+  const [estilos, setEstilos] = useState([]);
   const [barberos, setBarberos] = useState([]);
   const [loading, setLoading] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
@@ -2127,12 +2276,14 @@ export default function AdminPanel() {
   const loadData = async () => {
     setLoading(true);
     try {
-      const [c, s, b] = await Promise.all([
+      const [c, s, b, e] = await Promise.all([
         apiFetch("/citas"),
         apiFetch("/servicios"),
         apiFetch("/barberos"),
+        apiFetch("/estilos-cortes"),
       ]);
       setCitas(c); setServicios(s); setBarberos(b);
+      setEstilos(e);
     } catch (e) {
       if (e.error === 'Token inválido' || e.error === 'No autorizado') {
         localStorage.removeItem("admin_token");
@@ -2174,6 +2325,7 @@ export default function AdminPanel() {
     { id: "dashboard", icon: "📊", label: "Dashboard" },
     { id: "citas", icon: "📅", label: "Citas" },
     { id: "servicios", icon: "✂", label: "Servicios" },
+    { id: "estilos", icon: "Est", label: "Estilos" },
     { id: "barberos", icon: "💈", label: "Barberos" },
     { id: "productos", icon: "🛍", label: "Productos" },
     { id: "membresias", icon: "⭐", label: "Membresías" },
@@ -2185,6 +2337,7 @@ export default function AdminPanel() {
     dashboard: "Dashboard",
     citas: "Gestión de Citas",
     servicios: "Servicios",
+    estilos: "Estilos de Cortes",
     barberos: "Barberos",
     productos: "Productos",
     membresias: "Membresías",
@@ -2255,6 +2408,7 @@ export default function AdminPanel() {
                 {page === "dashboard" && <Dashboard citas={citas} servicios={servicios} barberos={barberos} />}
                 {page === "citas" && <CitasPanel citas={citas} onRefresh={loadData} />}
                 {page === "servicios" && <ServiciosPanel servicios={servicios} onRefresh={loadData} />}
+                {page === "estilos" && <EstilosCortesPanel estilos={estilos} onRefresh={loadData} />}
                 {page === "barberos" && <BarberosPanel barberos={barberos} onRefresh={loadData} />}
                 {page === "productos" && <ProductosPanel onRefresh={loadData} />}
                 {page === "membresias" && <MembresiasPanel usuarios={usuarios} onRefresh={loadData} />}

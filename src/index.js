@@ -23,6 +23,7 @@ const imagenesRoutes  = require('./routes/imagenes.routes')
 const productosRoutes = require('./routes/productos.routes')
 const membresiasRoutes = require('./routes/membresias.routes')
 const usuariosRoutes  = require('./routes/usuarios.routes')
+const estilosCorteRoutes = require('./routes/estilosCorte.routes')
 
 // ── 5. Jobs ───────────────────────────────────────────────────────────────────
 const cancelarCitasPendientes   = require('./jobs/cancelarCitas.job')
@@ -53,6 +54,7 @@ app.use('/api/imagenes',   imagenesRoutes)
 app.use('/api/productos',  productosRoutes)
 app.use('/api/membresias', membresiasRoutes)
 app.use('/api/usuarios',   usuariosRoutes)
+app.use('/api/estilos-cortes', estilosCorteRoutes)
 
 // ── Health check ──────────────────────────────────────────────────────────────
 app.get('/', (req, res) => {
