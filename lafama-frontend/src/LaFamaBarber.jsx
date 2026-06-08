@@ -935,11 +935,114 @@ background: radial-gradient(circle at 30% 110%, #f09433 0%, #e6683c 25%, #dc2743
   .pf-btn { background: none; border: 1px solid rgba(192,57,43,0.4); color: var(--rojo); font-family: 'Oswald', sans-serif; font-size: 10px; letter-spacing: 2px; text-transform: uppercase; padding: 8px 18px; cursor: pointer; transition: all 0.2s; }
   .pf-btn:hover { background: var(--rojo); color: var(--blanco); border-color: var(--rojo); }
 
+  .img-zoom-trigger {
+    border: 0;
+    background: transparent;
+    padding: 0;
+    cursor: zoom-in;
+    font: inherit;
+  }
+
+  .zoom-modal {
+    position: fixed;
+    inset: 0;
+    z-index: 400;
+    background: rgba(0,0,0,0.92);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 28px;
+  }
+
+  .zoom-viewer {
+    width: min(1100px, 96vw);
+    height: min(760px, 88vh);
+    background: #070707;
+    border: 1px solid rgba(255,255,255,0.12);
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 300px;
+    overflow: hidden;
+  }
+
+  .zoom-image-area {
+    position: relative;
+    overflow: hidden;
+    cursor: zoom-in;
+    background: #050505;
+  }
+
+  .zoom-image-area img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    transform-origin: var(--zoom-x, 50%) var(--zoom-y, 50%);
+    transform: scale(var(--zoom-scale, 1));
+    transition: transform 0.12s ease;
+    display: block;
+  }
+
+  .zoom-info {
+    border-left: 1px solid rgba(255,255,255,0.08);
+    padding: 28px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    background: var(--negro2);
+  }
+
+  .zoom-title {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 34px;
+    letter-spacing: 2px;
+    line-height: 1;
+    color: var(--blanco);
+  }
+
+  .zoom-sub {
+    font-family: 'Oswald', sans-serif;
+    font-size: 11px;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    color: var(--rojo);
+  }
+
+  .zoom-desc {
+    font-size: 13px;
+    color: var(--gris);
+    line-height: 1.7;
+    font-family: 'Crimson Pro', serif;
+    font-style: italic;
+  }
+
+  .zoom-price {
+    margin-top: auto;
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 34px;
+    color: var(--rojo);
+  }
+
+  .zoom-close {
+    position: absolute;
+    top: 18px;
+    right: 18px;
+    width: 38px;
+    height: 38px;
+    border: 1px solid rgba(255,255,255,0.18);
+    background: rgba(0,0,0,0.5);
+    color: var(--blanco);
+    cursor: pointer;
+    font-size: 18px;
+    z-index: 2;
+  }
+
   @media (max-width: 768px) {
     .pf-section { padding: 60px 20px; }
     .pf-grid { grid-template-columns: repeat(2, 1fr); gap: 12px; }
     .pf-img-wrap { width: 110px; height: 110px; }
     .pf-img-wrap img { width: 100px; height: 100px; }
+    .zoom-viewer { grid-template-columns: 1fr; height: 88vh; }
+    .zoom-info { border-left: 0; border-top: 1px solid rgba(255,255,255,0.08); padding: 18px; }
+    .zoom-image-area { min-height: 0; }
   }
   @media (max-width: 480px) {
     .pf-grid { grid-template-columns: 1fr; }
@@ -1054,6 +1157,49 @@ function getServicioImg(nombre) {
   if (n.includes('tratamiento')) return SERVICIOS_IMGS.tratamiento;
   if (n.includes('corte')) return SERVICIOS_IMGS.corte;
   return SERVICIOS_IMGS.default;
+}
+
+function getImageUrl(img) {
+  if (!img) return '';
+  return img.startsWith('/') ? `http://localhost:3000${img}` : img;
+}
+
+function ImageZoomModal({ item, onClose }) {
+  const [zoom, setZoom] = useState({ x: 50, y: 50, scale: 1 });
+  if (!item) return null;
+
+  const moveZoom = (e) => {
+    const rect = e.currentTarget.getBoundingClientRect();
+    const x = ((e.clientX - rect.left) / rect.width) * 100;
+    const y = ((e.clientY - rect.top) / rect.height) * 100;
+    setZoom({ x, y, scale: 2.35 });
+  };
+
+  return (
+    <div className="zoom-modal" onClick={onClose}>
+      <button className="zoom-close" onClick={onClose}>x</button>
+      <div className="zoom-viewer" onClick={e => e.stopPropagation()}>
+        <div
+          className="zoom-image-area"
+          onMouseMove={moveZoom}
+          onMouseLeave={() => setZoom(z => ({ ...z, scale: 1 }))}
+          style={{
+            "--zoom-x": `${zoom.x}%`,
+            "--zoom-y": `${zoom.y}%`,
+            "--zoom-scale": zoom.scale,
+          }}
+        >
+          <img src={item.img} alt={item.title} />
+        </div>
+        <div className="zoom-info">
+          {item.sub && <div className="zoom-sub">{item.sub}</div>}
+          <div className="zoom-title">{item.title}</div>
+          {item.desc && <div className="zoom-desc">{item.desc}</div>}
+          {item.price && <div className="zoom-price">{item.price}</div>}
+        </div>
+      </div>
+    </div>
+  );
 }
 
 function getIcon(nombre) {
@@ -1347,6 +1493,7 @@ export default function App() {
   const [miMembresia, setMiMembresia] = useState(null);
   const [planesMembresia, setPlanesMembresia] = useState([]);
   const [productos, setProductos] = useState([]);
+  const [zoomItem, setZoomItem] = useState(null);
 
   useEffect(() => {
     // Capturar token de Google OAuth
@@ -1859,13 +2006,23 @@ export default function App() {
               <div key={p.id} className="pf-card" style={{ animationDelay: `${i * 0.1}s` }}>
                 <div className="pf-glow" />
                 {p.badge && <span className="pf-badge">{p.badge}</span>}
-                <div className="pf-img-wrap">
+                <button
+                  type="button"
+                  className="pf-img-wrap img-zoom-trigger"
+                  onClick={() => setZoomItem({
+                    img: getImageUrl(p.imagen) || 'https://images.unsplash.com/photo-1599351431202-1e0f0137899a?w=1200&q=90&fit=crop',
+                    title: p.nombre,
+                    sub: p.categoria || 'Producto',
+                    desc: p.descripcion,
+                    price: `$${Number(p.precio).toLocaleString('es-CO')}`,
+                  })}
+                >
                   <img
-                    src={p.imagen || 'https://images.unsplash.com/photo-1599351431202-1e0f0137899a?w=300&q=90&fit=crop'}
+                    src={getImageUrl(p.imagen) || 'https://images.unsplash.com/photo-1599351431202-1e0f0137899a?w=300&q=90&fit=crop'}
                     alt={p.nombre}
                     onError={e => { e.target.src = 'https://images.unsplash.com/photo-1599351431202-1e0f0137899a?w=300&q=90&fit=crop'; }}
                   />
-                </div>
+                </button>
                 <div className="pf-shadow" />
                 <div className="pf-nombre">{p.nombre}</div>
                 {p.categoria && <div className="pf-cat">{p.categoria}</div>}
@@ -2029,6 +2186,8 @@ export default function App() {
       )}
 
       {toast && <Toast msg={toast.msg} type={toast.type} onClose={() => setToast(null)} />}
+
+      <ImageZoomModal item={zoomItem} onClose={() => setZoomItem(null)} />
 
       {/* 📸 BOTÓN FLOTANTE INSTAGRAM */}
       <a

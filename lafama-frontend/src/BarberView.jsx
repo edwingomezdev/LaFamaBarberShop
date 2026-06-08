@@ -642,6 +642,86 @@ const styles = `
     justify-content: center;
     color: var(--gris);
     font-size: 48px;
+    cursor: zoom-in;
+  }
+
+  .zoom-modal {
+    position: fixed;
+    inset: 0;
+    z-index: 400;
+    background: rgba(0,0,0,0.92);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 28px;
+  }
+
+  .zoom-viewer {
+    width: min(1080px, 96vw);
+    height: min(740px, 88vh);
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 280px;
+    background: var(--negro2);
+    border: 1px solid rgba(192,57,43,0.25);
+    overflow: hidden;
+  }
+
+  .zoom-image-area {
+    overflow: hidden;
+    background: var(--negro);
+    cursor: zoom-in;
+  }
+
+  .zoom-image-area img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    transform-origin: var(--zoom-x, 50%) var(--zoom-y, 50%);
+    transform: scale(var(--zoom-scale, 1));
+    transition: transform 0.12s ease;
+    display: block;
+  }
+
+  .zoom-info {
+    padding: 26px;
+    border-left: 1px solid rgba(255,255,255,0.06);
+  }
+
+  .zoom-title {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 34px;
+    letter-spacing: 2px;
+    line-height: 1;
+  }
+
+  .zoom-sub {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: 11px;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    color: var(--rojo);
+    margin-bottom: 10px;
+  }
+
+  .zoom-desc {
+    margin-top: 16px;
+    font-size: 13px;
+    color: var(--gris);
+    line-height: 1.7;
+  }
+
+  .zoom-close {
+    position: absolute;
+    top: 18px;
+    right: 18px;
+    width: 38px;
+    height: 38px;
+    border: 1px solid rgba(255,255,255,0.18);
+    background: rgba(0,0,0,0.5);
+    color: var(--blanco);
+    cursor: pointer;
+    font-size: 18px;
+    z-index: 2;
   }
 
   .corte-content {
@@ -840,10 +920,51 @@ const styles = `
     .citas-list .cita-card-top { border-right: none; padding-bottom: 0; }
     .citas-list .cita-card-footer { border-left: none; border-top: 1px solid rgba(255,255,255,0.04); }
     .catalogo-grid { grid-template-columns: 1fr; }
+    .zoom-viewer { grid-template-columns: 1fr; }
+    .zoom-info { border-left: 0; border-top: 1px solid rgba(255,255,255,0.06); }
     .topbar-clock { font-size: 22px; }
     .tabs-nav { padding: 0 16px; }
   }
 `;
+
+function ImageZoomModal({ item, onClose }) {
+  const [zoom, setZoom] = useState({ x: 50, y: 50, scale: 1 });
+  if (!item) return null;
+
+  const moveZoom = (e) => {
+    const rect = e.currentTarget.getBoundingClientRect();
+    setZoom({
+      x: ((e.clientX - rect.left) / rect.width) * 100,
+      y: ((e.clientY - rect.top) / rect.height) * 100,
+      scale: 2.35,
+    });
+  };
+
+  return (
+    <div className="zoom-modal" onClick={onClose}>
+      <button className="zoom-close" onClick={onClose}>x</button>
+      <div className="zoom-viewer" onClick={e => e.stopPropagation()}>
+        <div
+          className="zoom-image-area"
+          onMouseMove={moveZoom}
+          onMouseLeave={() => setZoom(z => ({ ...z, scale: 1 }))}
+          style={{
+            "--zoom-x": `${zoom.x}%`,
+            "--zoom-y": `${zoom.y}%`,
+            "--zoom-scale": zoom.scale,
+          }}
+        >
+          <img src={item.img} alt={item.title} />
+        </div>
+        <div className="zoom-info">
+          {item.sub && <div className="zoom-sub">{item.sub}</div>}
+          <div className="zoom-title">{item.title}</div>
+          {item.desc && <div className="zoom-desc">{item.desc}</div>}
+        </div>
+      </div>
+    </div>
+  );
+}
 
 // ── LOGIN new──
 function LoginScreen({ onLogin }) {
@@ -953,6 +1074,7 @@ export default function BarberView() {
   const [citas, setCitas] = useState([]);
   const [servicios, setServicios] = useState([]);
   const [estilosCortes, setEstilosCortes] = useState([]);
+  const [zoomItem, setZoomItem] = useState(null);
   const [loading, setLoading] = useState(false);
   const [toasts, setToasts] = useState([]);
   const [nuevasCitas, setNuevasCitas] = useState(new Set());
@@ -1288,6 +1410,12 @@ if (!barbero) {
                     <div key={corte.id} className="corte-card">
                       <div
                         className="corte-imagen"
+                        onClick={() => corte.imagen && setZoomItem({
+                          img: corte.imagen.startsWith('/') ? 'http://localhost:3000' + corte.imagen : corte.imagen,
+                          title: corte.nombre,
+                          sub: 'Catalogo de cortes',
+                          desc: corte.descripcion,
+                        })}
                         style={corte.imagen ? {
                           backgroundImage: `url(${corte.imagen.startsWith('/') ? 'http://localhost:3000' + corte.imagen : corte.imagen})`
                         } : {}}
@@ -1336,6 +1464,12 @@ if (!barbero) {
                     <div key={estilo.id} className="corte-card">
                       <div
                         className="corte-imagen"
+                        onClick={() => estilo.imagen && setZoomItem({
+                          img: estilo.imagen.startsWith('/') ? 'http://localhost:3000' + estilo.imagen : estilo.imagen,
+                          title: estilo.nombre,
+                          sub: estilo.categoria || 'Estilo de corte',
+                          desc: estilo.descripcion,
+                        })}
                         style={estilo.imagen ? {
                           backgroundImage: `url(${estilo.imagen.startsWith('/') ? 'http://localhost:3000' + estilo.imagen : estilo.imagen})`
                         } : {}}
@@ -1378,6 +1512,8 @@ if (!barbero) {
           </div>
         ))}
       </div>
+
+      <ImageZoomModal item={zoomItem} onClose={() => setZoomItem(null)} />
     </>
   );
 }

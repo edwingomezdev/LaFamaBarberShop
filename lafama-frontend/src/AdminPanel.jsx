@@ -722,6 +722,37 @@ const styles = `
   }
 `;
 
+function ImageZoomModal({ item, onClose }) {
+  const [zoom, setZoom] = useState({ x: 50, y: 50, scale: 1 });
+  if (!item) return null;
+
+  const moveZoom = (e) => {
+    const rect = e.currentTarget.getBoundingClientRect();
+    setZoom({
+      x: ((e.clientX - rect.left) / rect.width) * 100,
+      y: ((e.clientY - rect.top) / rect.height) * 100,
+      scale: 2.3,
+    });
+  };
+
+  return (
+    <div style={{ position: "fixed", inset: 0, zIndex: 500, background: "rgba(0,0,0,0.92)", display: "flex", alignItems: "center", justifyContent: "center", padding: 28 }} onClick={onClose}>
+      <button style={{ position: "absolute", top: 18, right: 18, width: 38, height: 38, background: "rgba(0,0,0,0.6)", border: "1px solid rgba(255,255,255,0.18)", color: "var(--blanco)", cursor: "pointer", fontSize: 18, zIndex: 2 }} onClick={onClose}>x</button>
+      <div style={{ width: "min(1080px, 96vw)", height: "min(740px, 88vh)", background: "var(--negro2)", border: "1px solid rgba(192,57,43,0.25)", display: "grid", gridTemplateColumns: "minmax(0, 1fr) 280px", overflow: "hidden" }} onClick={e => e.stopPropagation()}>
+        <div onMouseMove={moveZoom} onMouseLeave={() => setZoom(z => ({ ...z, scale: 1 }))} style={{ overflow: "hidden", background: "var(--negro)", cursor: "zoom-in" }}>
+          <img src={item.img} alt={item.title} style={{ width: "100%", height: "100%", objectFit: "contain", transformOrigin: `${zoom.x}% ${zoom.y}%`, transform: `scale(${zoom.scale})`, transition: "transform 0.12s ease", display: "block" }} />
+        </div>
+        <div style={{ padding: 26, borderLeft: "1px solid rgba(255,255,255,0.06)" }}>
+          {item.sub && <div style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: 11, letterSpacing: 3, textTransform: "uppercase", color: "var(--rojo)", marginBottom: 10 }}>{item.sub}</div>}
+          <div style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: 34, letterSpacing: 2, lineHeight: 1 }}>{item.title}</div>
+          {item.desc && <div style={{ marginTop: 16, fontSize: 13, color: "var(--gris)", lineHeight: 1.7 }}>{item.desc}</div>}
+          {item.price && <div style={{ marginTop: 22, fontFamily: "'Bebas Neue', sans-serif", fontSize: 30, color: "var(--rojo)" }}>{item.price}</div>}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ── LOGIN ──
 function LoginPage({ onLogin }) {
   const [email, setEmail] = useState("");
@@ -1202,6 +1233,7 @@ function EstilosCortesPanel({ estilos, onRefresh }) {
   const [form, setForm] = useState({ nombre: "", descripcion: "", imagen: "", categoria: "" });
   const [archivo, setArchivo] = useState(null);
   const [preview, setPreview] = useState("");
+  const [zoomItem, setZoomItem] = useState(null);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
@@ -1308,6 +1340,12 @@ function EstilosCortesPanel({ estilos, onRefresh }) {
         {estilos.map(estilo => (
           <div key={estilo.id} className="item-card">
             <div
+              onClick={() => estilo.imagen && setZoomItem({
+                img: getImageUrl(estilo.imagen),
+                title: estilo.nombre,
+                sub: estilo.categoria || "Estilo de corte",
+                desc: estilo.descripcion,
+              })}
               style={{
                 height: 170,
                 backgroundImage: estilo.imagen ? `url(${getImageUrl(estilo.imagen)})` : "none",
@@ -1323,6 +1361,7 @@ function EstilosCortesPanel({ estilos, onRefresh }) {
                 fontSize: 11,
                 letterSpacing: 2,
                 fontFamily: "'Barlow Condensed', sans-serif",
+                cursor: estilo.imagen ? "zoom-in" : "default",
               }}
             >
               {!estilo.imagen && "SIN IMAGEN"}
@@ -1369,6 +1408,7 @@ function EstilosCortesPanel({ estilos, onRefresh }) {
           </div>
         </div>
       )}
+      <ImageZoomModal item={zoomItem} onClose={() => setZoomItem(null)} />
     </div>
   );
 }
@@ -1949,8 +1989,14 @@ function ProductosPanel({ onRefresh }) {
   const [showModal, setShowModal] = useState(false);
   const [editing, setEditing] = useState(null);
   const [form, setForm] = useState({ nombre: "", descripcion: "", precio: "", categoria: "", badge: "", imagen: "", stock: "" });
+  const [zoomItem, setZoomItem] = useState(null);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+
+  const getImageUrl = (img) => {
+    if (!img) return "";
+    return img.startsWith("/") ? "http://localhost:3000" + img : img;
+  };
 
   const loadProductos = async () => {
     try { const data = await apiFetch("/productos"); setProductos(data); } catch (e) {}
@@ -1991,7 +2037,16 @@ function ProductosPanel({ onRefresh }) {
         {productos.map(p => (
           <div key={p.id} className="item-card">
             {p.imagen && (
-              <div style={{ width: "100%", height: 140, backgroundImage: `url(${p.imagen.startsWith('/') ? 'http://localhost:3000' + p.imagen : p.imagen})`, backgroundSize: "cover", backgroundPosition: "center", marginBottom: 16, border: "1px solid rgba(255,255,255,0.06)" }} />
+              <div
+                onClick={() => setZoomItem({
+                  img: getImageUrl(p.imagen),
+                  title: p.nombre,
+                  sub: p.categoria || "Producto",
+                  desc: p.descripcion,
+                  price: `$${Number(p.precio).toLocaleString("es-CO")}`,
+                })}
+                style={{ width: "100%", height: 140, backgroundImage: `url(${getImageUrl(p.imagen)})`, backgroundSize: "cover", backgroundPosition: "center", marginBottom: 16, border: "1px solid rgba(255,255,255,0.06)", cursor: "zoom-in" }}
+              />
             )}
             {p.badge && <div style={{ fontSize: 9, letterSpacing: 2, textTransform: "uppercase", background: "var(--rojo)", color: "var(--blanco)", padding: "3px 10px", display: "inline-block", marginBottom: 8 }}>{p.badge}</div>}
             <div className="item-card-name">{p.nombre}</div>
@@ -2037,6 +2092,7 @@ function ProductosPanel({ onRefresh }) {
           </div>
         </div>
       )}
+      <ImageZoomModal item={zoomItem} onClose={() => setZoomItem(null)} />
     </div>
   );
 }
