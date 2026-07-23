@@ -2,8 +2,11 @@ import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { FaWhatsapp } from "react-icons/fa";
 import { FaInstagram } from "react-icons/fa";
+import gsap from "gsap";
+import { ScrollTrigger } from "gsap/ScrollTrigger";
 
 const API = "http://localhost:3000/api";
+gsap.registerPlugin(ScrollTrigger);
 
 const styles = `
   @import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Oswald:wght@300;400;500;600;700&family=Crimson+Pro:ital,wght@0,300;0,400;1,300;1,400&display=swap');
@@ -308,6 +311,190 @@ const styles = `
   .section-header { margin-bottom: 60px; }
   .section-tag { font-size: 11px; letter-spacing: 5px; text-transform: uppercase; color: var(--rojo); margin-bottom: 12px; display: block; }
   .section-title { font-family: 'Bebas Neue', sans-serif; font-size: clamp(48px, 6vw, 80px); line-height: 1; letter-spacing: 2px; }
+
+  /* -- GSAP EXPERIENCE -- */
+  .experience-section {
+    position: relative;
+    background: #090909;
+    padding: 110px 60px;
+    border-top: 1px solid rgba(192,57,43,0.16);
+    border-bottom: 1px solid rgba(255,255,255,0.05);
+    overflow: hidden;
+  }
+
+  .experience-inner {
+    max-width: 1180px;
+    margin: 0 auto;
+  }
+
+  .experience-head {
+    display: grid;
+    grid-template-columns: minmax(0, 0.9fr) minmax(280px, 0.55fr);
+    gap: 48px;
+    align-items: end;
+    margin-bottom: 46px;
+  }
+
+  .experience-kicker {
+    display: inline-flex;
+    align-items: center;
+    gap: 12px;
+    font-family: 'Oswald', sans-serif;
+    font-size: 11px;
+    letter-spacing: 5px;
+    text-transform: uppercase;
+    color: var(--rojo);
+    margin-bottom: 18px;
+  }
+
+  .experience-kicker::before {
+    content: '';
+    width: 34px;
+    height: 1px;
+    background: var(--rojo);
+  }
+
+  .experience-title {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: clamp(54px, 7vw, 104px);
+    line-height: 0.9;
+    letter-spacing: 2px;
+  }
+
+  .experience-title span { color: var(--rojo); }
+
+  .experience-lead {
+    font-family: 'Crimson Pro', serif;
+    font-style: italic;
+    color: rgba(240,236,228,0.72);
+    font-size: 20px;
+    line-height: 1.55;
+  }
+
+  .experience-grid {
+    display: grid;
+    grid-template-columns: 1.15fr 0.85fr;
+    gap: 18px;
+    min-height: 560px;
+  }
+
+  .experience-hero-card,
+  .experience-stack-card {
+    position: relative;
+    overflow: hidden;
+    border: 1px solid rgba(255,255,255,0.08);
+    background: #111;
+  }
+
+  .experience-hero-card { min-height: 560px; }
+
+  .experience-stack {
+    display: grid;
+    gap: 18px;
+  }
+
+  .experience-stack-card { min-height: 271px; }
+
+  .experience-img {
+    position: absolute;
+    inset: 0;
+    background-size: cover;
+    background-position: center;
+    filter: saturate(0.92) contrast(1.08);
+    transform: scale(1.04);
+  }
+
+  .experience-img.primary {
+    background-image: url('https://images.unsplash.com/photo-1621605815971-fbc98d665033?w=1600&q=85');
+  }
+
+  .experience-img.secondary {
+    background-image: url('https://images.unsplash.com/photo-1599351431202-1e0f0137899a?w=1600&q=85');
+  }
+
+  .experience-img.tertiary {
+    background-image: url('https://images.unsplash.com/photo-1503951914875-452162b0f3f1?w=1600&q=85');
+  }
+
+  .experience-hero-card::after,
+  .experience-stack-card::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background:
+      linear-gradient(180deg, rgba(0,0,0,0.08), rgba(0,0,0,0.72)),
+      linear-gradient(90deg, rgba(0,0,0,0.5), transparent 54%);
+  }
+
+  .experience-card-content {
+    position: absolute;
+    left: 28px;
+    right: 28px;
+    bottom: 26px;
+    z-index: 2;
+  }
+
+  .experience-card-num {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 36px;
+    color: rgba(192,57,43,0.9);
+    margin-bottom: 8px;
+  }
+
+  .experience-card-title {
+    font-family: 'Oswald', sans-serif;
+    font-size: 13px;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    color: var(--blanco);
+    margin-bottom: 8px;
+  }
+
+  .experience-card-copy {
+    color: rgba(240,236,228,0.66);
+    font-size: 13px;
+    line-height: 1.65;
+    max-width: 430px;
+  }
+
+  .experience-rule {
+    width: 100%;
+    height: 1px;
+    background: linear-gradient(90deg, var(--rojo), transparent);
+    margin-top: 42px;
+    transform-origin: left center;
+  }
+
+  @media (max-width: 900px) {
+    .experience-section { padding: 70px 20px; }
+    .experience-head { grid-template-columns: 1fr; gap: 18px; }
+    .experience-grid { grid-template-columns: 1fr; min-height: auto; }
+    .experience-hero-card { min-height: 460px; }
+    .experience-stack-card { min-height: 280px; }
+  }
+
+
+  .timed-video-stack {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+}
+
+.timed-video {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  opacity: 0;
+  transition: opacity 0.9s ease;
+  pointer-events: none;
+}
+
+.timed-video.is-active {
+  opacity: 1;
+}
 
   /* ── SERVICIOS GRID (estilo tarjeta flotante igual que productos) ── */
   .servicios-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 24px; }
@@ -1363,13 +1550,171 @@ const CAROUSEL_SLIDES = [
   }
 ];
 
+function TimedVideoStack({ sources = [], interval = 5000, className = '' }) {
+  const [activeIndex, setActiveIndex] = useState(0);
+  const videoRefs = useRef([]);
+
+  useEffect(() => {
+    if (sources.length < 2) return;
+    const timer = setInterval(() => {
+      setActiveIndex((prev) => (prev + 1) % sources.length);
+    }, interval);
+    return () => clearInterval(timer);
+  }, [sources.length, interval]);
+
+  useEffect(() => {
+    const current = videoRefs.current[activeIndex];
+    if (current) {
+      current.currentTime = 0;
+      current.play().catch(() => { });
+    }
+  }, [activeIndex]);
+
+  return (
+    <div className={`timed-video-stack ${className}`}>
+      {sources.map((src, i) => (
+        <video
+          key={src}
+          ref={(el) => (videoRefs.current[i] = el)}
+          src={src}
+          className={`timed-video ${i === activeIndex ? 'is-active' : ''}`}
+          muted
+          loop
+          playsInline
+          autoPlay
+        />
+      ))}
+    </div>
+  );
+}
+
+function BarberExperience() {
+  const sectionRef = useRef(null);
+
+  useEffect(() => {
+    const section = sectionRef.current;
+    if (!section) return;
+
+    const ctx = gsap.context(() => {
+      gsap.from('.experience-kicker, .experience-title, .experience-lead', {
+        y: 28,
+        opacity: 0,
+        duration: 0.85,
+        stagger: 0.12,
+        ease: 'power3.out',
+        scrollTrigger: {
+          trigger: section,
+          start: 'top 72%',
+        },
+      });
+
+      gsap.from('.experience-hero-card, .experience-stack-card', {
+        y: 54,
+        opacity: 0,
+        duration: 0.9,
+        stagger: 0.12,
+        ease: 'power3.out',
+        scrollTrigger: {
+          trigger: '.experience-grid',
+          start: 'top 78%',
+        },
+      });
+
+      gsap.to('.experience-img', {
+        yPercent: -6,
+        ease: 'none',
+        scrollTrigger: {
+          trigger: section,
+          start: 'top bottom',
+          end: 'bottom top',
+          scrub: true,
+        },
+      });
+
+      gsap.fromTo('.experience-rule', { scaleX: 0 }, {
+        scaleX: 1,
+        duration: 1,
+        ease: 'power3.out',
+        scrollTrigger: {
+          trigger: '.experience-rule',
+          start: 'top 86%',
+        },
+      });
+    }, section);
+
+    return () => ctx.revert();
+  }, []);
+
+  return (
+    <section className="experience-section" ref={sectionRef}>
+      <div className="experience-inner">
+        <div className="experience-head">
+          <div>
+            <div className="experience-kicker">Experiencia La Fama</div>
+            <h2 className="experience-title">RITUAL DE<br /><span>PRECISION</span></h2>
+          </div>
+          <p className="experience-lead">
+            En nuestra barbería te escuchamos primero: hablamos sobre tu estilo, tu rutina y lo que quieres proyectar. Con diagnóstico personalizado y técnica cuidadosa te damos un corte que te queda cómodo, auténtico y fácil de llevar. Ven como eres, sal con la confianza de verte exactamente como quieres.  </p>
+        </div>
+
+        <div className="experience-grid">
+          <article className="experience-hero-card">
+            <div className="experience-img primary" />
+            <div className="experience-card-content">
+              <div className="experience-card-num">01</div>
+              <div className="experience-card-title">Diagnostico del estilo</div>
+              <div className="experience-card-copy">Antes del corte se lee forma, textura y referencia para que el resultado tenga intencion.</div>
+            </div>
+          </article>
+
+          <div className="experience-stack">
+            <article className="experience-stack-card">
+              <div className="experience-img secondary" />
+              <div className="experience-card-content">
+                <div className="experience-card-num">02</div>
+                <div className="experience-card-title">Tecnica limpia</div>
+                <div className="experience-card-copy">Degradado, lineas y simetria trabajadas por capas.</div>
+              </div>
+            </article>
+
+            <article className="experience-stack-card">
+              <div className="experience-img tertiary" />
+              <div className="experience-card-content">
+                <div className="experience-card-num">03</div>
+                <div className="experience-card-title">Acabado final</div>
+                <div className="experience-card-copy">Producto, peinado y detalle para salir listo.</div>
+              </div>
+            </article>
+
+            {/* card de video */}
+            <article className="experience-stack-card">
+              <TimedVideoStack
+                sources={['/public/videos/Barber_cutting_hair_cinematic_202607222004.mp4']}
+                interval={5000}
+                className="experience-img quaternary"
+              />
+              <div className="experience-card-content">
+                <div className="experience-card-num">04</div>
+                <div className="experience-card-title">Resultado en movimiento</div>
+                <div className="experience-card-copy">Mira el antes y despues en video, directo desde el sillon.</div>
+              </div>
+            </article>
+          </div>
+        </div>
+
+        <div className="experience-rule" />
+      </div>
+    </section>
+  );
+}
+
 function HeroCarousel({ onReservar, onServicios }) {
   const [slides, setSlides] = useState(CAROUSEL_SLIDES);
   const [current, setCurrent] = useState(0);
   const [progress, setProgress] = useState(0);
   const intervalRef = useRef(null);
   const progressRef = useRef(null);
-  const DURATION = 5000;
+  const DURATION = 15000;
 
   useEffect(() => {
     fetch(`${API}/imagenes/carrusel`)
@@ -1608,7 +1953,7 @@ export default function App() {
 
   const logout = () => { localStorage.removeItem('token'); localStorage.removeItem('usuario'); setUsuario(null); setToken(''); setMisCitas([]); setVista('home'); showToast('Sesión cerrada'); };
 
-  const tickerText = '✦ LA FAMA BARBER ✦ ALL STARS ✦ MEDELLÍN ✦ EST. 2015 ✦ CORTES DE ÉLITE ✦ LA FAMA BARBER ✦ ALL STARS ✦ MEDELLÍN ✦ EST. 2015 ✦ CORTES DE ÉLITE ✦ ';
+  const tickerText = '✦ LA FAMA BARBER ✦ ALL STARS ✦ MEDELLÍN ✦ EST. 2012 ✦ CORTES DE ÉLITE ✦ LA FAMA BARBER ✦ ALL STARS ✦ MEDELLÍN ✦ EST. 2012 ✦ CORTES DE ÉLITE ✦ ';
 
 
   return (
@@ -1677,6 +2022,8 @@ export default function App() {
           onReservar={() => document.getElementById('booking')?.scrollIntoView({ behavior: 'smooth' })}
           onServicios={() => document.getElementById('servicios')?.scrollIntoView({ behavior: 'smooth' })}
         />
+
+        <BarberExperience />
 
         <div className="ticker"><span className="ticker-inner">{tickerText}{tickerText}</span></div>
 
@@ -2201,7 +2548,7 @@ export default function App() {
 
       {/* 🔥 BOTÓN FLOTANTE WHATSAPP */}
       <a
-        href="https://wa.me/573183453071?text=Hola%20quiero%20agendar%20un%20corte%20"
+        href="https://wa.me/573013090185?text=Hola%20quiero%20agendar%20un%20corte%20"
         target="_blank"
         rel="noopener noreferrer"
         className="whatsapp-float"
