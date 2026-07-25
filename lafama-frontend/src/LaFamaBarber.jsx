@@ -1689,8 +1689,8 @@ function BarberExperience() {
             {/* card de video */}
             <article className="experience-stack-card">
               <TimedVideoStack
-                sources={['/public/videos/Barber_cutting_hair_cinematic_202607222004.mp4']}
-                interval={5000}
+                sources={['/src/videos/Barber_cutting_hair_cinematic_202607222004.mp4','/src/videos/Barberia_La_Fama_commercial_202607241700.mp4']}
+                interval={10000}
                 className="experience-img quaternary"
               />
               <div className="experience-card-content">
@@ -2030,7 +2030,8 @@ export default function App() {
         <section className="section" id="servicios">
           <div className="section-header">
             <span className="section-tag">Lo que hacemos</span>
-            <h2 className="section-title">NUESTROS<br />SERVICIOS</h2>
+            <h2 className="section-title">NUESTROS<br /><span style={{ color: 'var(--rojo)' }}>SERVICIOS</span></h2>
+             
           </div>
           {loadingSvcs ? <div className="loading"><div className="spinner" />Cargando servicios...</div> :
             <div className="servicios-grid">
@@ -2056,7 +2057,8 @@ export default function App() {
         <section className="section" style={{ background: 'var(--negro2)' }}>
           <div className="section-header">
             <span className="section-tag">El equipo</span>
-            <h2 className="section-title">NUESTROS<br />BARBEROS</h2>
+            <h2 className="section-title">NUESTROS<br /> <span style={{ color: 'var(--rojo)' }}>BARBEROS</span></h2>
+           
           </div>
           {loadingBarbs ? <div className="loading"><div className="spinner" />Cargando barberos...</div> :
             <div className="barberos-grid">
@@ -2080,8 +2082,9 @@ export default function App() {
         <section className="section booking-section" id="booking">
           <div className="section-header">
             <span className="section-tag">Agenda tu turno</span>
-            <h2 className="section-title">RESERVA<br />TU CITA</h2>
+            <h2 className="section-title">RESERVA<br /><span style={{ color: 'var(--rojo)' }}>TU CITA</span></h2>
           </div>
+          
           <div className="booking-grid">
             <div>
               <label className="form-label">Fecha</label>
