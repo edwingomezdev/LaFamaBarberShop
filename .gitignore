@@ -7,3 +7,6 @@ dist/
 build/
 coverage/
 npm-debug.log
+src/uploads/
+
+src/uploads/

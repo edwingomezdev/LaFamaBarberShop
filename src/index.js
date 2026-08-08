@@ -8,11 +8,13 @@ const path = require('path')
 const swaggerUi = require('swagger-ui-express')
 const session = require('express-session')
 
+
 // ── 3. Config interna ─────────────────────────────────────────────────────────
 const logger = require('./config/logger')
 const passport = require('./config/passport')
 const swaggerSpec = require('./swagger')
 const { errorHandler } = require('./middlewares/error.middleware')
+
 
 // ── 4. Rutas ──────────────────────────────────────────────────────────────────
 const authRoutes      = require('./routes/auth.routes')
@@ -24,6 +26,9 @@ const productosRoutes = require('./routes/productos.routes')
 const membresiasRoutes = require('./routes/membresias.routes')
 const usuariosRoutes  = require('./routes/usuarios.routes')
 const estilosCorteRoutes = require('./routes/estilosCorte.routes')
+const automationRoutes = require('./routes/automation.routes')
+const whatsappRoutes = require("./whatsapp/routes/whatsapp.routes");
+
 
 // ── 5. Jobs ───────────────────────────────────────────────────────────────────
 const cancelarCitasPendientes   = require('./jobs/cancelarCitas.job')
@@ -38,6 +43,12 @@ app.use(express.json())
 app.use(session({ secret: env.SESSION_SECRET, resave: false, saveUninitialized: false }))
 app.use(passport.initialize())
 app.use(passport.session())
+
+app.use((req, res, next) => {
+    console.log("=================================");
+    console.log(req.method, req.originalUrl);
+    next();
+});
 
 // ── Archivos estáticos ────────────────────────────────────────────────────────
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')))
@@ -55,6 +66,8 @@ app.use('/api/productos',  productosRoutes)
 app.use('/api/membresias', membresiasRoutes)
 app.use('/api/usuarios',   usuariosRoutes)
 app.use('/api/estilos-cortes', estilosCorteRoutes)
+app.use('/api/automation', automationRoutes)
+app.use("/api/whatsapp", whatsappRoutes);
 
 // ── Health check ──────────────────────────────────────────────────────────────
 app.get('/', (req, res) => {

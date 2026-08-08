@@ -9,11 +9,13 @@ import { BrowserRouter, Routes, Route } from 'react-router-dom';
 
 // ── CSS global (importar aquí, no dentro de los componentes) ──────────────────
 import './styles/global.css';
+import './styles/App.css'
+import './styles/LaFamaBarber.css';
+import './styles/Barberview.css';
+
 
 // ── Páginas ───────────────────────────────────────────────────────────────────
-// NOTA: Renombrar los archivos quitando el sufijo _prd2 antes de importar.
-//   mv LaFamaBarber_prd2.jsx LaFamaBarber.jsx
-//   mv AdminPanel_prd2.jsx AdminPanel.jsx
+
 import LaFamaBarber from './LaFamaBarber.jsx';
 import AdminPanel   from './AdminPanel.jsx';
 import BarberView   from './BarberView.jsx';

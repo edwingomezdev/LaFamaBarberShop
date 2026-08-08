@@ -35,7 +35,7 @@ model Usuario {
   nombre     String
   email      String             @unique
   password   String
-  telefono   String?
+  telefono String?              @unique
   rol        Rol                @default(CLIENTE)
   createdAt  DateTime           @default(now())
   citas      Cita[]
