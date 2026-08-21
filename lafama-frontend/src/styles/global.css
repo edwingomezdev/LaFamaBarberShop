@@ -170,3 +170,18 @@ textarea.input {
 @media (max-width: 768px) {
   .toast { bottom: 80px; right: 16px; left: 16px; max-width: none; }
 }
+
+ @media (max-width: 768px) {
+    .topbar { padding: 0 16px; }
+    .stats-bar { padding: 0 16px; overflow-x: auto; }
+    .content { padding: 20px 16px; }
+    .citas-grid { grid-template-columns: 1fr; }
+    .citas-list .cita-card { grid-template-columns: 1fr; }
+    .citas-list .cita-card-top { border-right: none; padding-bottom: 0; }
+    .citas-list .cita-card-footer { border-left: none; border-top: 1px solid rgba(255,255,255,0.04); }
+    .catalogo-grid { grid-template-columns: 1fr; }
+    .zoom-viewer { grid-template-columns: 1fr; }
+    .zoom-info { border-left: 0; border-top: 1px solid rgba(255,255,255,0.06); }
+    .topbar-clock { font-size: 22px; }
+    .tabs-nav { padding: 0 16px; }
+  }

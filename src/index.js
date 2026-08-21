@@ -28,6 +28,8 @@ const usuariosRoutes  = require('./routes/usuarios.routes')
 const estilosCorteRoutes = require('./routes/estilosCorte.routes')
 const automationRoutes = require('./routes/automation.routes')
 const whatsappRoutes = require("./whatsapp/routes/whatsapp.routes");
+const availabilityRoutes = require('./routes/availability.routes')
+
 
 
 // ── 5. Jobs ───────────────────────────────────────────────────────────────────
@@ -68,6 +70,8 @@ app.use('/api/usuarios',   usuariosRoutes)
 app.use('/api/estilos-cortes', estilosCorteRoutes)
 app.use('/api/automation', automationRoutes)
 app.use("/api/whatsapp", whatsappRoutes);
+app.use('/api/citas', citasRoutes)
+app.use('/api/availability', availabilityRoutes)
 
 // ── Health check ──────────────────────────────────────────────────────────────
 app.get('/', (req, res) => {

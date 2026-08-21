@@ -7,35 +7,12 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-// ── ENUMS ────────────────────────────────────────────────────────────────────
-
-enum Rol {
-  ADMIN
-  CLIENTE
-}
-
-enum EstadoCita {
-  PENDIENTE
-  CONFIRMADA
-  CANCELADA
-  COMPLETADA
-}
-
-enum EstadoMembresia {
-  ACTIVA
-  CANCELADA
-  VENCIDA
-  AGOTADA
-}
-
-// ── MODELOS ───────────────────────────────────────────────────────────────────
-
 model Usuario {
   id         Int                @id @default(autoincrement())
   nombre     String
   email      String             @unique
   password   String
-  telefono String?              @unique
+  telefono   String?
   rol        Rol                @default(CLIENTE)
   createdAt  DateTime           @default(now())
   citas      Cita[]
@@ -46,23 +23,65 @@ model Barbero {
   id           Int      @id @default(autoincrement())
   nombre       String
   especialidad String
-  descripcion  String?
   foto         String?
-  pin          String?
   activo       Boolean  @default(true)
   createdAt    DateTime @default(now())
+  pin          String?
+  descripcion  String?
   citas        Cita[]
 }
 
 model Servicio {
-  id          Int            @id @default(autoincrement())
+  id          Int                  @id @default(autoincrement())
   nombre      String
   descripcion String?
   precio      Float
   duracion    Int
+  activo      Boolean              @default(true)
   imagen      String?
-  activo      Boolean        @default(true)
   citas       CitaServicio[]
+  componentes ServicioComponente[]
+}
+
+model ComponenteServicio {
+  id          Int     @id @default(autoincrement())
+  nombre      String  @unique
+  descripcion String?
+  activo      Boolean @default(true)
+
+  servicios ServicioComponente[]
+
+  reglasOrigen       ReglaComponente[] @relation("ComponenteReglas")
+  reglasRelacionadas ReglaComponente[] @relation("RelacionadoReglas")
+}
+
+model ServicioComponente {
+  servicioId   Int
+  componenteId Int
+
+  servicio   Servicio           @relation(fields: [servicioId], references: [id])
+  componente ComponenteServicio @relation(fields: [componenteId], references: [id])
+
+  @@id([servicioId, componenteId])
+}
+
+enum TipoReglaComponente {
+  PERMITIR
+  PROHIBIR
+}
+
+model ReglaComponente {
+  id            Int                 @id @default(autoincrement())
+  componenteId  Int
+  relacionadoId Int
+  tipo          TipoReglaComponente
+  activo        Boolean             @default(true)
+  createdAt     DateTime            @default(now())
+
+  componente  ComponenteServicio @relation("ComponenteReglas", fields: [componenteId], references: [id])
+  relacionado ComponenteServicio @relation("RelacionadoReglas", fields: [relacionadoId], references: [id])
+
+  @@unique([componenteId, relacionadoId])
 }
 
 model EstiloCorte {
@@ -82,13 +101,10 @@ model Cita {
   estado    EstadoCita     @default(PENDIENTE)
   nota      String?
   createdAt DateTime       @default(now())
-
   usuarioId Int
-  usuario   Usuario        @relation(fields: [usuarioId], references: [id])
-
   barberoId Int
   barbero   Barbero        @relation(fields: [barberoId], references: [id])
-
+  usuario   Usuario        @relation(fields: [usuarioId], references: [id])
   servicios CitaServicio[]
 }
 
@@ -146,6 +162,25 @@ model UsuarioMembresia {
   cortesUsados Int             @default(0)
   estado       EstadoMembresia @default(ACTIVA)
   createdAt    DateTime        @default(now())
-  usuario      Usuario         @relation(fields: [usuarioId], references: [id])
   membresia    Membresia       @relation(fields: [membresiaId], references: [id])
+  usuario      Usuario         @relation(fields: [usuarioId], references: [id])
+}
+
+enum Rol {
+  ADMIN
+  CLIENTE
+}
+
+enum EstadoCita {
+  PENDIENTE
+  CONFIRMADA
+  CANCELADA
+  COMPLETADA
+}
+
+enum EstadoMembresia {
+  ACTIVA
+  CANCELADA
+  VENCIDA
+  AGOTADA
 }

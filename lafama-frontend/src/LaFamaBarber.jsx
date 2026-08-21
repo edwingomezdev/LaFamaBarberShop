@@ -453,7 +453,7 @@ function HeroCarousel({ onReservar, onServicios }) {
       ))}
 
       <div className="hero-content">
-        <div className="hero-tag">Medellín · Est. 2015</div>
+        <div className="hero-tag">Medellín · Est. 2025</div>
         <h1 className="hero-h1">EL ESTILO<br /><span className="red">NO SE</span><br />IMPROVISA</h1>
         <div className="hero-slogan">—LA FAMA BARBER<br /> All Stars —</div>
         <div className="hero-corte-label">
@@ -630,7 +630,7 @@ export default function App() {
 
   const logout = () => { localStorage.removeItem('token'); localStorage.removeItem('usuario'); setUsuario(null); setToken(''); setMisCitas([]); setVista('home'); showToast('Sesión cerrada'); };
 
-  const tickerText = '✦ LA FAMA BARBER ✦ ALL STARS ✦ MEDELLÍN ✦ EST. 2012 ✦ CORTES DE ÉLITE ✦ LA FAMA BARBER ✦ ALL STARS ✦ MEDELLÍN ✦ EST. 2012 ✦ CORTES DE ÉLITE ✦ ';
+  const tickerText = '✦ LA FAMA BARBER ✦ ALL STARS ✦ MEDELLÍN ✦ EST. 2025 ✦ CORTES DE ÉLITE ✦ LA FAMA BARBER ✦ ALL STARS ✦ MEDELLÍN ✦ EST. 2025 ✦ CORTES DE ÉLITE ✦ ';
 
 
   return (

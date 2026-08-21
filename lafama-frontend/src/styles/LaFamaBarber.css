@@ -116,7 +116,7 @@
 
   .hero-content {
     position: relative; z-index: 10;
-    height: 100vh;
+    height: 130vh;
     display: flex; flex-direction: column;
     justify-content: center;
     padding: 0 60px;
@@ -1175,12 +1175,28 @@
 
   /* ── SECCIÓN MEMBRESÍAS ── */
   .membresias-section { background: var(--negro); padding: 100px 60px; }
-  .membresias-intro { max-width: 700px; margin-bottom: 16px; }
-  .membresias-intro-text { font-family: 'Crimson Pro', serif; font-style: italic; font-size: 16px; color: var(--gris); line-height: 1.7; margin-bottom: 40px; }
+ /*.membresias-intro { max-width: 700px; margin-bottom: 16px; }
+  .membresias-intro-text { font-family: 'Crimson Pro', serif; font-style: italic; font-size: 16px; color: var(--gris); line-height: 1.7; margin-bottom: 40px; }*/
   .membresias-aviso { display: inline-flex; align-items: flex-start; gap: 12px; background: rgba(192,57,43,0.07); border: 1px solid rgba(192,57,43,0.2); padding: 14px 20px; margin-bottom: 48px; }
   .membresias-aviso-txt { font-size: 11px; color: rgba(240,236,228,0.6); letter-spacing: 0.5px; line-height: 1.6; }
   .membresias-aviso-txt strong { color: var(--rojo); font-weight: 500; }
+.membresias-intro {
+  width: 100%;
+  max-width: 700px;
+  margin: 0 auto 16px;
+  text-align: center;
+}
 
+.membresias-intro-text {
+  max-width: 700px;
+  margin: 0 auto 40px;
+  font-family: 'Crimson Pro', serif;
+  font-style: italic;
+  font-size: 16px;
+  color: var(--gris);
+  line-height: 1.7;
+  text-align: center;
+}
   .planes-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 3px; }
 
   .plan-card {
