@@ -1,8 +1,8 @@
 const express = require('express')
 const router = express.Router()
-const { registro, login } = require('../controllers/auth.controller')
+const { registro, crearPersonal, login } = require('../controllers/auth.controller')
 const validate = require('../middlewares/validate.middleware')
-const { registroSchema, loginSchema } = require('../validators/auth.validator')
+const { registroSchema, personalSchema, loginSchema } = require('../validators/auth.validator')
 const { verificarToken, soloAdmin } = require('../middlewares/auth.middleware');
 const prisma = require('../prisma')
 
@@ -39,6 +39,7 @@ const prisma = require('../prisma')
  *         description: Email ya registrado o datos inválidos
  */
 router.post('/registro', validate(registroSchema), registro)
+router.post('/personal', verificarToken, soloAdmin, validate(personalSchema), crearPersonal)
 
 /**
  * @swagger
@@ -106,6 +107,21 @@ router.get('/usuarios', verificarToken, soloAdmin, async (req, res) => {
       orderBy: { createdAt: 'desc' }
     })
     res.json(usuarios)
+  } catch (e) {
+    console.error(e)
+    res.status(500).json({ error: 'Error interno' })
+  }
+})
+
+// Cuentas internas para los paneles de recepción e inventario.
+router.get('/personal', verificarToken, soloAdmin, async (req, res) => {
+  try {
+    const personal = await prisma.usuario.findMany({
+      where: { rol: { in: ['RECEPCION', 'PRODUCTOS'] } },
+      select: { id: true, nombre: true, email: true, telefono: true, rol: true, createdAt: true },
+      orderBy: { createdAt: 'desc' },
+    })
+    res.json(personal)
   } catch (e) {
     console.error(e)
     res.status(500).json({ error: 'Error interno' })

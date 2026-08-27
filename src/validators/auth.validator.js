@@ -7,9 +7,13 @@ const registroSchema = z.object({
   telefono: z.string().optional()
 })
 
+const personalSchema = registroSchema.extend({
+  rol: z.enum(['RECEPCION', 'PRODUCTOS']),
+})
+
 const loginSchema = z.object({
   email: z.string().email('Email inválido'),
   password: z.string().min(1, 'La contraseña es requerida')
 })
 
-module.exports = { registroSchema, loginSchema }
+module.exports = { registroSchema, personalSchema, loginSchema }

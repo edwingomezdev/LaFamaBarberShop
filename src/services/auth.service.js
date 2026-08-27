@@ -21,6 +21,29 @@ const registro = async ({ nombre, email, password, telefono }) => {
   return { id: usuario.id, nombre: usuario.nombre, email: usuario.email }
 }
 
+const crearPersonal = async ({ nombre, email, password, telefono, rol }) => {
+  const rolesPermitidos = ['RECEPCION', 'PRODUCTOS']
+  if (!rolesPermitidos.includes(rol)) {
+    throw createError(400, 'El rol de personal no es válido')
+  }
+
+  const existe = await prisma.usuario.findUnique({ where: { email } })
+  if (existe) throw createError(400, 'El email ya está registrado')
+
+  const passwordHash = await bcrypt.hash(password, 10)
+  const usuario = await prisma.usuario.create({
+    data: { nombre, email, password: passwordHash, telefono, rol },
+  })
+
+  return {
+    id: usuario.id,
+    nombre: usuario.nombre,
+    email: usuario.email,
+    telefono: usuario.telefono,
+    rol: usuario.rol,
+  }
+}
+
 const login = async ({ email, password, ip }) => {
   // Verificar bloqueo
   const attempts = loginAttempts.get(ip) || { count: 0, lastAttempt: null }
@@ -57,4 +80,4 @@ const login = async ({ email, password, ip }) => {
   }
 }
 
-module.exports = { registro, login }
+module.exports = { registro, crearPersonal, login }

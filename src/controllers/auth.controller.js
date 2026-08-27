@@ -9,6 +9,15 @@ const registro = async (req, res, next) => {
   }
 }
 
+const crearPersonal = async (req, res, next) => {
+  try {
+    const usuario = await authService.crearPersonal(req.body)
+    res.status(201).json({ mensaje: 'Cuenta de personal creada exitosamente', usuario })
+  } catch (err) {
+    next(err)
+  }
+}
+
 const login = async (req, res, next) => {
   try {
     const ip = req.ip || req.connection.remoteAddress
@@ -19,4 +28,4 @@ const login = async (req, res, next) => {
   }
 }
 
-module.exports = { registro, login }
+module.exports = { registro, crearPersonal, login }
