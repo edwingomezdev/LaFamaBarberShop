@@ -10,7 +10,6 @@ gsap.registerPlugin(ScrollTrigger);
 
 
 const MONTHS = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
-const TIMES = ['8:00', '9:00', '10:00', '11:00', '12:00', '2:00', '3:00', '4:00', '5:00', '6:00', '7:00'];
 
 const SERVICIOS_IMGS = {
   'corte': 'https://images.unsplash.com/photo-1503951914875-452162b0f3f1?w=800&q=80',
@@ -72,6 +71,13 @@ function ImageZoomModal({ item, onClose }) {
       </div>
     </div>
   );
+}
+
+function formatFechaLocal(date) {
+  const y = date.getFullYear();
+  const m = String(date.getMonth() + 1).padStart(2, '0');
+  const d = String(date.getDate()).padStart(2, '0');
+  return `${y}-${m}-${d}`;
 }
 
 function getIcon(nombre) {
@@ -374,7 +380,7 @@ function BarberExperience() {
             {/* card de video */}
             <article className="experience-stack-card">
               <TimedVideoStack
-                sources={['/src/assets/videos/Barber_cutting_hair_cinematic_202607222004.mp4','/src/assets/videos/Barberia_La_Fama_commercial_202607241700.mp4']}
+                sources={['/src/assets/videos/Barber_cutting_hair_cinematic_202607222004.mp4', '/src/assets/videos/Barberia_La_Fama_commercial_202607241700.mp4']}
                 interval={10000}
                 className="experience-img quaternary"
               />
@@ -513,7 +519,8 @@ export default function App() {
   const [selectedBarbero, setSelectedBarbero] = useState(null);
   const [selectedFecha, setSelectedFecha] = useState(null);
   const [selectedHora, setSelectedHora] = useState('');
-  const [horasOcupadas, setHorasOcupadas] = useState([]);
+  const [slotsDisponibles, setSlotsDisponibles] = useState([]);
+  const [loadingSlots, setLoadingSlots] = useState(false);
   const [nota, setNota] = useState('');
   const [showAuth, setShowAuth] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
@@ -539,12 +546,13 @@ export default function App() {
       window.history.replaceState({}, '', '/');
       sessionStorage.setItem('bienvenido', usr.nombre);
       if (usr.rol === 'ADMIN') navigate('/admin');
+      else if (usr.rol === 'RECEPCION') navigate('/recepcion');
     } else {
       const t = localStorage.getItem('token');
       const u = localStorage.getItem('usuario');
       if (t && u) {
         const usr = JSON.parse(u);
-        if (usr.rol !== 'ADMIN') {
+        if (usr.rol !== 'ADMIN' && usr.rol !== 'RECEPCION') {
           setToken(t);
           setUsuario(usr);
         }
@@ -600,7 +608,7 @@ export default function App() {
       const r = await fetch(`${API}/citas`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-        body: JSON.stringify({ barberoId: selectedBarbero.id, fecha: selectedFecha.toISOString().split('T')[0], hora: selectedHora, servicioIds: selectedServicios.map(s => s.id), nota })
+        body: JSON.stringify({ barberoId: selectedBarbero.id, fecha: formatFechaLocal(selectedFecha), hora: selectedHora, servicioIds: selectedServicios.map(s => s.id), nota })
       });
       const data = await r.json();
       if (!r.ok) { showToast(data.error || 'Error al agendar', 'error'); }
@@ -616,17 +624,23 @@ export default function App() {
     } catch { showToast('Error de conexión', 'error'); }
   };
 
-  const fetchHorasOcupadas = async () => {
-    if (!selectedBarbero || !selectedFecha) return;
+  const fetchSlotsDisponibles = async () => {
+    if (!selectedBarbero || !selectedFecha || !selectedServicios.length) { setSlotsDisponibles([]); return; }
+    setLoadingSlots(true);
     try {
-      const fecha = selectedFecha.toISOString().split('T')[0];
-      const r = await fetch(`${API}/citas/horas-ocupadas?barberoId=${selectedBarbero.id}&fecha=${fecha}`);
+      const fecha = formatFechaLocal(selectedFecha);
+      const servicioIds = selectedServicios.map(s => s.id).join(',');
+      const r = await fetch(`${API}/citas/slots-disponibles?barberoId=${selectedBarbero.id}&fecha=${fecha}&servicioIds=${servicioIds}`);
       const data = await r.json();
-      setHorasOcupadas(Array.isArray(data) ? data : []);
-    } catch { }
+      setSlotsDisponibles(Array.isArray(data) ? data : []);
+    } catch { setSlotsDisponibles([]); }
+    setLoadingSlots(false);
   };
 
-  useEffect(() => { fetchHorasOcupadas(); }, [selectedBarbero, selectedFecha]);
+  useEffect(() => {
+    setSelectedHora('');
+    fetchSlotsDisponibles();
+  }, [selectedBarbero, selectedFecha, selectedServicios]);
 
   const logout = () => { localStorage.removeItem('token'); localStorage.removeItem('usuario'); setUsuario(null); setToken(''); setMisCitas([]); setVista('home'); showToast('Sesión cerrada'); };
 
@@ -635,7 +649,7 @@ export default function App() {
 
   return (
     <>
-      
+
       <div className="noise" />
       <Cursor />
 
@@ -645,6 +659,7 @@ export default function App() {
           <button className="nav-link" onClick={() => { setVista('home'); window.scrollTo({ top: 0, behavior: 'smooth' }); }}>Inicio</button>
           <button className="nav-link" onClick={() => { setVista('home'); setTimeout(() => document.getElementById('servicios')?.scrollIntoView({ behavior: 'smooth' }), 100); }}>Servicios</button>
           <button className="nav-link" onClick={() => { setVista('home'); setTimeout(() => document.getElementById('membresias')?.scrollIntoView({ behavior: 'smooth' }), 100); }}>Membresías</button>
+          <button className="nav-link" onClick={() => navigate('/productos')}>Productos</button>
           <button className="nav-link" onClick={() => { setVista('home'); setTimeout(() => document.getElementById('booking')?.scrollIntoView({ behavior: 'smooth' }), 100); }}>Reservar</button>
           {usuario && <button className="nav-link" onClick={() => setVista('citas')}>Mis Citas</button>}
           {usuario ? (
@@ -708,7 +723,7 @@ export default function App() {
           <div className="section-header">
             <span className="section-tag">Lo que hacemos</span>
             <h2 className="section-title">NUESTROS<br /><span style={{ color: 'var(--rojo)' }}>SERVICIOS</span></h2>
-             
+
           </div>
           {loadingSvcs ? <div className="loading"><div className="spinner" />Cargando servicios...</div> :
             <div className="servicios-grid">
@@ -735,7 +750,7 @@ export default function App() {
           <div className="section-header">
             <span className="section-tag">El equipo</span>
             <h2 className="section-title">NUESTROS<br /> <span style={{ color: 'var(--rojo)' }}>BARBEROS</span></h2>
-           
+
           </div>
           {loadingBarbs ? <div className="loading"><div className="spinner" />Cargando barberos...</div> :
             <div className="barberos-grid">
@@ -761,24 +776,27 @@ export default function App() {
             <span className="section-tag">Agenda tu turno</span>
             <h2 className="section-title">RESERVA<br /><span style={{ color: 'var(--rojo)' }}>TU CITA</span></h2>
           </div>
-          
+
           <div className="booking-grid">
             <div>
               <label className="form-label">Fecha</label>
               <Calendario selected={selectedFecha} onSelect={setSelectedFecha} />
               <label className="form-label">Hora disponible</label>
               <div className="times-grid">
-                {TIMES.map(t => {
-                  const ocupada = horasOcupadas.includes(t);
-                  return (
-                    <div key={t}
-                      className={`time-slot ${selectedHora === t ? 'selected' : ''} ${ocupada ? 'taken' : ''}`}
-                      onClick={() => !ocupada && setSelectedHora(t)}
-                      title={ocupada ? 'Hora no disponible' : ''}>
-                      {t}
-                    </div>
-                  );
-                })}
+                {!selectedServicios.length && <p className="rp-empty" style={{ fontSize: 12, opacity: 0.6 }}>Elige un servicio primero</p>}
+                {selectedServicios.length > 0 && !selectedBarbero && <p className="rp-empty" style={{ fontSize: 12, opacity: 0.6 }}>Elige un barbero</p>}
+                {selectedServicios.length > 0 && selectedBarbero && !selectedFecha && <p className="rp-empty" style={{ fontSize: 12, opacity: 0.6 }}>Elige una fecha</p>}
+                {loadingSlots && <p className="rp-empty" style={{ fontSize: 12, opacity: 0.6 }}>Cargando horarios...</p>}
+                {!loadingSlots && selectedBarbero && selectedFecha && selectedServicios.length > 0 && slotsDisponibles.length === 0 && (
+                  <p className="rp-empty" style={{ fontSize: 12, opacity: 0.6 }}>No hay horarios disponibles ese día</p>
+                )}
+                {slotsDisponibles.map(t => (
+                  <div key={t}
+                    className={`time-slot ${selectedHora === t ? 'selected' : ''}`}
+                    onClick={() => setSelectedHora(t)}>
+                    {t}
+                  </div>
+                ))}
               </div>
               <label className="form-label">Nota para el barbero (opcional)</label>
               <textarea className="form-input" placeholder="Ej: Quiero el degradado bajo..." rows={3} value={nota} onChange={e => setNota(e.target.value)} style={{ resize: 'none' }} />
@@ -1021,8 +1039,8 @@ export default function App() {
         </section>
       )}
 
-      {/* ── SECCIÓN PRODUCTOS FLOTANTES ── */}
-      {vista === 'home' && (
+      {/* Catálogo trasladado a la ruta pública /productos. */}
+      {false && vista === 'home' && (
         <section className="pf-section" id="productos">
           <div className="section-header">
             <span className="section-tag">Lo que usamos</span>
@@ -1193,6 +1211,7 @@ export default function App() {
         setToken(t);
         setTimeout(() => showToast(`¡Bienvenido, ${u.nombre}! 👋`), 100);
         if (u.rol === 'ADMIN') navigate('/admin');
+        else if (u.rol === 'RECEPCION') navigate('/recepcion');
       }} />}
 
       {showConfirm && confirmData && (

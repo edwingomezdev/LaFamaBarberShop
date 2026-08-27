@@ -718,6 +718,33 @@
   .empty-state { text-align: center; padding: 60px; color: var(--gris); font-size: 13px; border: 1px dashed rgba(255,255,255,0.06); font-family: 'Crimson Pro', serif; font-style: italic; }
   .alert { padding: 12px 16px; margin-bottom: 16px; font-size: 12px; letter-spacing: 1px; border: 1px solid rgba(192,57,43,0.4); color: var(--rojo); background: rgba(192,57,43,0.08); }
 
+  .toast {
+    position: fixed;
+    bottom: 24px;
+    right: 24px;
+    z-index: 500;
+    background: var(--negro2);
+    color: var(--blanco);
+    padding: 16px 24px;
+    border-left: 4px solid var(--rojo);
+    font-family: 'Oswald', sans-serif;
+    font-size: 13px;
+    letter-spacing: 0.5px;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+    animation: toastIn 0.3s ease;
+    max-width: 320px;
+  }
+  .toast.error { border-left-color: #e74c3c; }
+  .toast.success { border-left-color: #27ae60; }
+  @keyframes toastIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  @media (max-width: 480px) {
+    .toast { left: 16px; right: 16px; bottom: 16px; max-width: none; }
+  }
+
+
   /* ── RESPONSIVE ── */
 
   /* Tablet grande */
