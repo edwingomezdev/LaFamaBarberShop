@@ -1,6 +1,9 @@
 const prisma = require('../prisma')
 const { createError } = require('../middlewares/error.middleware')
 const availabilityEngine = require('../automation/availability/availability.engine')
+const ventasService = require('./ventas.service')
+const bcrypt = require('bcryptjs')
+const crypto = require('crypto')
 
 const CITA_INCLUDE = {
   barbero: true,
@@ -508,8 +511,8 @@ const obtener = async (id) => {
   return cita
 }
 
-const cambiarEstado = (id, estado) =>
-  prisma.cita.update({
+const cambiarEstado = async (id, estado) => {
+  const cita = await prisma.cita.update({
     where: {
       id: Number(id),
     },
@@ -517,6 +520,17 @@ const cambiarEstado = (id, estado) =>
       estado,
     },
   })
+
+  // Igual que en la ruta del barbero: al completar la cita
+  // (esta vez desde el panel de admin) se genera la venta
+  // pendiente de cobro automáticamente. Es idempotente, así
+  // que si el barbero ya la había completado antes, no duplica nada.
+  if (estado === 'COMPLETADA') {
+    await ventasService.crearVentaPendienteDeCita(cita.id)
+  }
+
+  return cita
+}
 
 const cancelar = async (id, usuarioId) => {
   const cita = await prisma.cita.findUnique({
@@ -549,6 +563,120 @@ const cancelar = async (id, usuarioId) => {
   })
 }
 
+/**
+ * Agenda de un día específico (hora Bogotá), todos los barberos.
+ * Si no se pasa `fecha`, usa el día de hoy. Es lo que ve
+ * recepción/admin como tablero — a diferencia de `listar()` que
+ * trae el historial completo sin filtrar.
+ */
+const listarPorFecha = (fechaStr) => {
+  let year, month, day
+
+  if (fechaStr) {
+    [year, month, day] = fechaStr.split('-').map(Number)
+    month -= 1
+  } else {
+    const ahoraBogota = new Date(Date.now() - 5 * 60 * 60 * 1000)
+    year = ahoraBogota.getUTCFullYear()
+    month = ahoraBogota.getUTCMonth()
+    day = ahoraBogota.getUTCDate()
+  }
+
+  const inicio = new Date(Date.UTC(year, month, day))
+  const fin = new Date(inicio.getTime() + 24 * 60 * 60 * 1000)
+
+  return prisma.cita.findMany({
+    where: { fecha: { gte: inicio, lt: fin } },
+    include: CITA_INCLUDE,
+    orderBy: { hora: 'asc' },
+  })
+}
+
+/**
+ * Busca un cliente por teléfono. Si no existe, crea una cuenta
+ * mínima automáticamente (sin que el cliente tenga que hacer nada
+ * ni loguearse) para poder asociarle la cita, ya que Cita siempre
+ * requiere un Usuario.
+ */
+const buscarOCrearClienteWalkIn = async ({ nombre, telefono }) => {
+  if (!telefono) throw createError(400, 'El teléfono del cliente es requerido')
+
+  const existente = await prisma.usuario.findFirst({ where: { telefono } })
+  if (existente) return existente
+
+  const passwordAleatoria = crypto.randomBytes(16).toString('hex')
+  const passwordHash = await bcrypt.hash(passwordAleatoria, 10)
+
+  return prisma.usuario.create({
+    data: {
+      nombre: nombre || `Cliente ${telefono}`,
+      email: `walkin-${telefono}-${Date.now()}@lafama.local`,
+      password: passwordHash,
+      telefono,
+      rol: 'CLIENTE',
+    },
+  })
+}
+
+/**
+ * Registra en el mostrador a un cliente que llegó sin cita.
+ * A diferencia de `agendar()`, no valida contra los slots
+ * calculados (recepción está viendo al cliente físicamente ahí),
+ * pero sí valida que el barbero y los servicios existan y sean
+ * compatibles entre sí.
+ */
+const agendarWalkIn = async ({ barberoId, servicioIds, clienteNombre, clienteTelefono }) => {
+  const barberoIdNumber = Number(barberoId)
+  const servicioIdsNumber = (servicioIds || []).map(Number)
+
+  if (!Number.isInteger(barberoIdNumber)) throw createError(400, 'barberoId no es válido')
+  if (servicioIdsNumber.length === 0) throw createError(400, 'Debes seleccionar al menos un servicio')
+
+  validarServiciosRepetidos(servicioIdsNumber)
+
+  const barbero = await prisma.barbero.findUnique({ where: { id: barberoIdNumber } })
+  if (!barbero || !barbero.activo) throw createError(400, 'Barbero no disponible')
+
+  const servicios = await obtenerServiciosConComponentes(servicioIdsNumber)
+  validarServiciosExistentes(servicioIdsNumber, servicios)
+  await validarCompatibilidad(servicios)
+
+  const cliente = await buscarOCrearClienteWalkIn({ nombre: clienteNombre, telefono: clienteTelefono })
+
+  const ahoraUTC = new Date()
+  const ahoraBogota = new Date(ahoraUTC.getTime() - 5 * 60 * 60 * 1000)
+  const fecha = new Date(Date.UTC(
+    ahoraBogota.getUTCFullYear(), ahoraBogota.getUTCMonth(), ahoraBogota.getUTCDate()
+  ))
+  const hora = `${String(ahoraBogota.getUTCHours()).padStart(2, '0')}:${String(ahoraBogota.getUTCMinutes()).padStart(2, '0')}`
+
+  return prisma.cita.create({
+    data: {
+      usuarioId: cliente.id,
+      barberoId: barberoIdNumber,
+      fecha,
+      hora,
+      estado: 'CONFIRMADA',
+      nota: 'Cliente registrado en mostrador por recepción',
+      servicios: { create: servicioIdsNumber.map(id => ({ servicio: { connect: { id } } })) },
+    },
+    include: CITA_INCLUDE,
+  })
+}
+
+const obtenerSlotsDisponibles = async ({ barberoId, fecha, servicioIds }) => {
+  if (!barberoId || !fecha || !Array.isArray(servicioIds) || servicioIds.length === 0) {
+    throw createError(400, 'barberoId, fecha y servicioIds son requeridos')
+  }
+
+  const servicios = await obtenerServiciosConComponentes(servicioIds)
+  validarServiciosExistentes(servicioIds, servicios)
+
+  const duracionTotal = calcularDuracionTotal(servicios)
+
+  return availabilityEngine.getAvailableSlots(barberoId, fecha, duracionTotal)
+}
+
 const horasOcupadas = async ({
   barberoId,
   fecha,
@@ -579,9 +707,12 @@ const horasOcupadas = async ({
 module.exports = {
   agendar,
   listar,
+  listarPorFecha,
   listarPorUsuario,
   obtener,
   cambiarEstado,
   cancelar,
   horasOcupadas,
+  obtenerSlotsDisponibles,
+  agendarWalkIn,
 }
