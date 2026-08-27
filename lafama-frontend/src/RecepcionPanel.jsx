@@ -1,6 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-
-const API = "http://localhost:3000/api";
+import { API } from "./services/api";
 
 const formatPrecio = (p) => '$' + Number(p).toLocaleString('es-CO');
 
