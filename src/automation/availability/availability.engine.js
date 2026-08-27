@@ -107,7 +107,37 @@ class AvailabilityEngine {
         const end =
             timeHelper.toMinutes("21:00");
 
+               const ahoraBogota = new Date(Date.now() - 5 * 60 * 60 * 1000);
+        const fechaSolicitada = new Date(fecha);
+        const esHoy =
+            ahoraBogota.getUTCFullYear() === fechaSolicitada.getUTCFullYear() &&
+            ahoraBogota.getUTCMonth() === fechaSolicitada.getUTCMonth() &&
+            ahoraBogota.getUTCDate() === fechaSolicitada.getUTCDate();
+        const minutosAhora = esHoy
+            ? ahoraBogota.getUTCHours() * 60 + ahoraBogota.getUTCMinutes()
+            : -1;
+
         let current = start;
+
+        while (current + duracion <= end) {
+
+            if (
+                current > minutosAhora &&
+                this.isSlotAvailable(
+                    current,
+                    duracion,
+                    occupiedIntervals
+                )
+            ) {
+                slots.push(
+                    timeHelper.toTime(current)
+                );
+            }
+
+            current += duracion;
+        }
+
+        
 
         while (current + duracion <= end) {
 
