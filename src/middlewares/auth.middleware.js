@@ -69,4 +69,22 @@ const soloAdminOBarbero = (req, res, next) => {
   return res.status(403).json({ error: 'Acceso denegado' })
 }
 
-module.exports = { verificarToken, verificarBarberoToken, verificarTokenFlexible, soloAdmin, soloAdminOBarbero }
+// Middleware genérico: permite pasar solo a los roles indicados.
+// Uso: permitirRoles('ADMIN', 'RECEPCION')
+// Requiere que verificarToken (o verificarTokenFlexible) haya corrido antes
+// para poblar req.usuario.
+const permitirRoles = (...rolesPermitidos) => (req, res, next) => {
+  if (!req.usuario || !rolesPermitidos.includes(req.usuario.rol)) {
+    return res.status(403).json({ error: 'Acceso denegado. No tienes permisos para esta acción' })
+  }
+  next()
+}
+
+module.exports = {
+  verificarToken,
+  verificarBarberoToken,
+  verificarTokenFlexible,
+  soloAdmin,
+  soloAdminOBarbero,
+  permitirRoles,
+}
