@@ -14,19 +14,25 @@ import './styles/LaFamaBarber.css';
 import './styles/Barberview.css';
 
 
+
 // ── Páginas ───────────────────────────────────────────────────────────────────
 
 import LaFamaBarber from './LaFamaBarber.jsx';
-import AdminPanel   from './AdminPanel.jsx';
-import BarberView   from './BarberView.jsx';
+import AdminPanel from './AdminPanel.jsx';
+import RecepcionPanel from './RecepcionPanel.jsx';
+import BarberView from './BarberView.jsx';
+import PublicProducts from './PublicProducts.jsx';
 
 // ── Render ────────────────────────────────────────────────────────────────────
 createRoot(document.getElementById('root')).render(
   <StrictMode>
     <BrowserRouter>
       <Routes>
-        <Route path="/"        element={<LaFamaBarber />} />
-        <Route path="/admin"   element={<AdminPanel />} />
+        <Route path="/" element={<LaFamaBarber />} />
+        <Route path="/admin" element={<AdminPanel />} />
+        <Route path="/recepcion" element={<RecepcionPanel />} />
+        <Route path="/productos" element={<PublicProducts />} />
+        <Route path="/inventario" element={<AdminPanel panel="productos" />} />
         <Route path="/barbero" element={<BarberView />} />
       </Routes>
     </BrowserRouter>
