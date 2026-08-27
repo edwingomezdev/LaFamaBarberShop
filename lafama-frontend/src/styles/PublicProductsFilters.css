@@ -1,0 +1,31 @@
+.public-products-filters {
+  display: flex;
+  gap: 8px;
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 0 7vw 8px;
+  overflow-x: auto;
+}
+
+.public-products-filters button {
+  flex: 0 0 auto;
+  padding: 8px 13px;
+  border: 1px solid rgba(255,255,255,.12);
+  background: transparent;
+  color: var(--gris);
+  cursor: pointer;
+  font: 600 10px 'Barlow Condensed', sans-serif;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+}
+
+.public-products-filters button:hover,
+.public-products-filters button.active {
+  border-color: var(--rojo);
+  background: rgba(192,57,43,.13);
+  color: var(--blanco);
+}
+
+@media (max-width: 600px) {
+  .public-products-filters { padding-left: 24px; padding-right: 24px; }
+}
