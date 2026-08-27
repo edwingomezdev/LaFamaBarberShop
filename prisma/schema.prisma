@@ -17,6 +17,7 @@ model Usuario {
   createdAt  DateTime           @default(now())
   citas      Cita[]
   membresias UsuarioMembresia[]
+  ventasCobradas Venta[]
 }
 
 model Barbero {
@@ -29,6 +30,7 @@ model Barbero {
   pin          String?
   descripcion  String?
   citas        Cita[]
+  ventas       Venta[]
 }
 
 model Servicio {
@@ -106,6 +108,7 @@ model Cita {
   barbero   Barbero        @relation(fields: [barberoId], references: [id])
   usuario   Usuario        @relation(fields: [usuarioId], references: [id])
   servicios CitaServicio[]
+  venta     Venta?
 }
 
 model CitaServicio {
@@ -116,6 +119,59 @@ model CitaServicio {
 
   @@id([citaId, servicioId])
 }
+
+enum Rol {
+  ADMIN
+  RECEPCION
+  PRODUCTOS
+  CLIENTE
+
+}
+
+model Venta {
+  id                Int             @id @default(autoincrement())
+  citaId            Int?            @unique
+  cita              Cita?           @relation(fields: [citaId], references: [id])
+  barberoId         Int?
+  barbero           Barbero?        @relation(fields: [barberoId], references: [id])
+  itemsExtra        VentaExtra[]
+  productos         VentaProducto[]
+  subtotalServicios Float           @default(0)
+  subtotalExtras    Float           @default(0)
+  subtotalProductos Float           @default(0)
+  total             Float
+  metodoPago        MetodoPago?
+  cobrado           Boolean         @default(false)
+  cobradoPorId      Int?
+  cobradoPor        Usuario?        @relation(fields: [cobradoPorId], references: [id])
+  fechaCobro        DateTime?
+  createdAt         DateTime        @default(now())
+}
+
+model VentaExtra {
+  id          Int    @id @default(autoincrement())
+  ventaId     Int
+  venta       Venta  @relation(fields: [ventaId], references: [id])
+  descripcion String
+  precio      Float
+}
+
+model VentaProducto {
+  id         Int      @id @default(autoincrement())
+  ventaId    Int
+  venta      Venta    @relation(fields: [ventaId], references: [id])
+  productoId Int
+  producto   Producto @relation(fields: [productoId], references: [id])
+  cantidad   Int
+  precioUnit Float
+}
+
+enum MetodoPago {
+  EFECTIVO
+  TARJETA
+  TRANSFERENCIA
+}
+
 
 model ImagenCarrusel {
   id          Int      @id @default(autoincrement())
@@ -138,6 +194,7 @@ model Producto {
   stock       Int      @default(0)
   activo      Boolean  @default(true)
   createdAt   DateTime @default(now())
+  ventas      VentaProducto[]
 }
 
 model Membresia {
@@ -166,10 +223,7 @@ model UsuarioMembresia {
   usuario      Usuario         @relation(fields: [usuarioId], references: [id])
 }
 
-enum Rol {
-  ADMIN
-  CLIENTE
-}
+
 
 enum EstadoCita {
   PENDIENTE
