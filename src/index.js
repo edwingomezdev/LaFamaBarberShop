@@ -29,6 +29,7 @@ const estilosCorteRoutes = require('./routes/estilosCorte.routes')
 const automationRoutes = require('./routes/automation.routes')
 const whatsappRoutes = require("./whatsapp/routes/whatsapp.routes");
 const availabilityRoutes = require('./routes/availability.routes')
+const ventasRoutes = require('./routes/ventas.routes')
 
 
 
@@ -72,6 +73,7 @@ app.use('/api/automation', automationRoutes)
 app.use("/api/whatsapp", whatsappRoutes);
 app.use('/api/citas', citasRoutes)
 app.use('/api/availability', availabilityRoutes)
+app.use('/api/ventas', ventasRoutes)
 
 // ── Health check ──────────────────────────────────────────────────────────────
 app.get('/', (req, res) => {
