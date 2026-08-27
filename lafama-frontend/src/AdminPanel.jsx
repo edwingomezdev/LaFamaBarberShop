@@ -754,7 +754,7 @@ function ImageZoomModal({ item, onClose }) {
 }
 
 // ── LOGIN ──
-function LoginPage({ onLogin }) {
+function LoginPage({ onLogin, allowedRoles = ["ADMIN"], panelName = "Administrativo" }) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
@@ -767,8 +767,8 @@ function LoginPage({ onLogin }) {
         method: "POST",
         body: JSON.stringify({ email, password })
       });
-      if (data.usuario.rol !== "ADMIN") {
-        setError("Acceso denegado. Se requiere rol de administrador.");
+      if (!allowedRoles.includes(data.usuario.rol)) {
+        setError(`Acceso denegado. Se requiere permiso para ${panelName.toLowerCase()}.`);
         setLoading(false); return;
       }
       /*  localStorage.setItem("token", data.token);
@@ -787,9 +787,9 @@ function LoginPage({ onLogin }) {
       <div className="login-bg" />
       <div className="login-box">
         <div className="login-logo">LA <span>FAMA</span> BARBER</div>
-        <div className="login-tag">Panel Administrativo</div>
-        <div className="login-title">Acceso Admin</div>
-        <p className="login-sub">Ingresa tus credenciales de administrador</p>
+        <div className="login-tag">Panel {panelName}</div>
+        <div className="login-title">Acceso {panelName}</div>
+        <p className="login-sub">Ingresa tus credenciales para continuar</p>
         {error && <div className="error-msg">{error}</div>}
         <label className="field-label">Email</label>
         <input className="input" type="email" placeholder="admin@lafama.com" value={email}
@@ -2030,7 +2030,7 @@ function ProductosPanel({ onRefresh }) {
   return (
     <div>
       <div className="section-header">
-        <div className="section-title">Productos</div>
+        <div className="section-title">Inventario de tienda</div>
         <button className="btn-primary" onClick={openCreate}>+ Nuevo Producto</button>
       </div>
       <div className="cards-grid">
@@ -2343,14 +2343,125 @@ function MembresiasPanel({ usuarios, onRefresh }) {
   );
 }
 
+// ── PERSONAL ──
+function PersonalPanel() {
+  const initialForm = { nombre: "", email: "", telefono: "", password: "", rol: "RECEPCION" };
+  const [personal, setPersonal] = useState([]);
+  const [form, setForm] = useState(initialForm);
+  const [showModal, setShowModal] = useState(false);
+  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
+
+  const loadPersonal = async () => {
+    try { setPersonal(await apiFetch("/auth/personal")); } catch (e) { setError(e.error || "No se pudo cargar el personal"); }
+  };
+
+  useEffect(() => { loadPersonal(); }, []);
+
+  const openCreate = () => {
+    setForm(initialForm); setError(""); setShowModal(true);
+  };
+
+  const save = async () => {
+    const nombre = form.nombre.trim();
+    const email = form.email.trim();
+    if (!nombre || !email || !form.password) {
+      setError("Nombre, email y contraseña son obligatorios"); return;
+    }
+    if (nombre.length < 2) {
+      setError("El nombre debe tener al menos 2 caracteres"); return;
+    }
+    if (!/^\S+@\S+\.\S+$/.test(email)) {
+      setError("Ingresa un email válido"); return;
+    }
+    if (form.password.length < 6) {
+      setError("La contraseña debe tener al menos 6 caracteres"); return;
+    }
+    setError(""); setLoading(true);
+    try {
+      await apiFetch("/auth/personal", {
+        method: "POST",
+        body: JSON.stringify({ ...form, nombre, email, telefono: form.telefono.trim() || undefined }),
+      });
+      setShowModal(false); loadPersonal();
+    } catch (e) {
+      const validationMessage = e.errores?.map(item => item.mensaje).join(" · ");
+      setError(validationMessage || e.error || "No se pudo crear la cuenta");
+    }
+    setLoading(false);
+  };
+
+  const roleLabel = { RECEPCION: "Recepción", PRODUCTOS: "Productos" };
+
+  return (
+    <div>
+      <div className="section-header">
+        <div>
+          <div className="section-title">Personal</div>
+          <div style={{ color: "var(--gris)", fontSize: 13, marginTop: 4 }}>Cuentas con acceso limitado a un solo panel.</div>
+        </div>
+        <button className="btn-primary" onClick={openCreate}>+ Nueva cuenta</button>
+      </div>
+
+      <div className="cards-grid">
+        {personal.map(persona => (
+          <div className="item-card" key={persona.id}>
+            <div className="item-card-name">{persona.nombre}</div>
+            <div className="item-card-sub">{persona.email}</div>
+            {persona.telefono && <div className="item-card-sub">📞 {persona.telefono}</div>}
+            <div style={{ marginTop: 20 }}>
+              <span className={`badge ${persona.rol === "RECEPCION" ? "badge-CONFIRMADA" : "badge-COMPLETADA"}`}>
+                {roleLabel[persona.rol]}
+              </span>
+            </div>
+          </div>
+        ))}
+        {personal.length === 0 && <div className="empty" style={{ gridColumn: "1/-1" }}>Aún no hay cuentas de recepción o productos.</div>}
+      </div>
+
+      {showModal && (
+        <div className="modal-overlay" onClick={() => setShowModal(false)}>
+          <div className="modal" onClick={e => e.stopPropagation()}>
+            <button className="modal-close" onClick={() => setShowModal(false)}>✕</button>
+            <div className="modal-title">Nueva cuenta</div>
+            <label className="field-label">Nombre</label>
+            <input className="input" value={form.nombre} onChange={e => setForm(p => ({ ...p, nombre: e.target.value }))} placeholder="Nombre completo" />
+            <label className="field-label">Email</label>
+            <input className="input" type="email" value={form.email} onChange={e => setForm(p => ({ ...p, email: e.target.value }))} placeholder="correo@lafama.com" />
+            <label className="field-label">Teléfono (opcional)</label>
+            <input className="input" value={form.telefono} onChange={e => setForm(p => ({ ...p, telefono: e.target.value }))} placeholder="300 000 0000" />
+            <label className="field-label">Contraseña temporal</label>
+            <input className="input" type="password" minLength="6" value={form.password} onChange={e => setForm(p => ({ ...p, password: e.target.value }))} placeholder="Mínimo 6 caracteres" />
+            <label className="field-label">Panel asignado</label>
+            <select className="input" value={form.rol} onChange={e => setForm(p => ({ ...p, rol: e.target.value }))}>
+              <option value="RECEPCION">Recepción — citas</option>
+              <option value="PRODUCTOS">Productos — inventario</option>
+            </select>
+            {error && <div className="error-msg">{error}</div>}
+            <div className="modal-actions">
+              <button className="btn-full secondary" onClick={() => setShowModal(false)}>Cancelar</button>
+              <button className="btn-full primary" onClick={save} disabled={loading}>{loading ? "Creando..." : "Crear cuenta"}</button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
  
 
  
 // ── MAIN APP ──
-export default function AdminPanel() {
+export default function AdminPanel({ panel = "admin" }) {
+  const panelConfig = {
+    admin: { name: "Administrativo", roles: ["ADMIN"], initialPage: "dashboard", pages: null },
+    recepcion: { name: "Recepción", roles: ["ADMIN", "RECEPCION"], initialPage: "citas", pages: ["citas"] },
+    productos: { name: "Inventario", roles: ["ADMIN", "PRODUCTOS"], initialPage: "productos", pages: ["productos"] },
+  }[panel] || { name: "Administrativo", roles: ["ADMIN"], initialPage: "dashboard", pages: null };
   /* const [user, setUser] = useState(() => JSON.parse(localStorage.getItem("user") || "null")); */
   const [user, setUser] = useState(() => JSON.parse(localStorage.getItem("admin_user") || "null"));
-  const [page, setPage] = useState("dashboard");
+  const [page, setPage] = useState(panelConfig.initialPage);
   const [citas, setCitas] = useState([]);
   const [servicios, setServicios] = useState([]);
   const [estilos, setEstilos] = useState([]);
@@ -2359,17 +2470,21 @@ export default function AdminPanel() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [usuarios, setUsuarios] = useState([]);
 
+  // Al cambiar entre rutas de panel, muestra siempre su módulo permitido.
+  useEffect(() => { setPage(panelConfig.initialPage); }, [panel]);
+
   const loadData = async () => {
     setLoading(true);
     try {
-      const [c, s, b, e] = await Promise.all([
-        apiFetch("/citas"),
-        apiFetch("/servicios"),
-        apiFetch("/barberos"),
-        apiFetch("/estilos-cortes"),
-      ]);
-      setCitas(c); setServicios(s); setBarberos(b);
-      setEstilos(e);
+      if (panel === "recepcion") {
+        const citasRecepcion = await apiFetch("/citas");
+        setCitas(citasRecepcion);
+      } else if (panel === "admin") {
+        const [c, s, b, e] = await Promise.all([
+          apiFetch("/citas"), apiFetch("/servicios"), apiFetch("/barberos"), apiFetch("/estilos-cortes"),
+        ]);
+        setCitas(c); setServicios(s); setBarberos(b); setEstilos(e);
+      }
     } catch (e) {
       if (e.error === 'Token inválido' || e.error === 'No autorizado') {
         localStorage.removeItem("admin_token");
@@ -2378,14 +2493,13 @@ export default function AdminPanel() {
       }
     }
     // Cargar usuarios por separado para no bloquear el resto
-    try {
-      const u = await apiFetch("/auth/usuarios");
-      setUsuarios(u);
-    } catch (e) {}
+    if (panel === "admin") {
+      try { const u = await apiFetch("/auth/usuarios"); setUsuarios(u); } catch (e) {}
+    }
     setLoading(false);
   };
 
-  useEffect(() => { if (user?.rol === "ADMIN") loadData(); }, [user]);
+  useEffect(() => { if (user && panelConfig.roles.includes(user.rol)) loadData(); }, [user]);
 
   /* const logout = () => {
     localStorage.removeItem("token");
@@ -2398,26 +2512,28 @@ export default function AdminPanel() {
     localStorage.removeItem("admin_user");
     setUser(null);
   };
-  if (!user || user.rol !== "ADMIN") {
+  if (!user || !panelConfig.roles.includes(user.rol)) {
     return (
       <>
         <style>{styles}</style>
-        <LoginPage onLogin={u => setUser(u)} />
+        <LoginPage onLogin={u => setUser(u)} allowedRoles={panelConfig.roles} panelName={panelConfig.name} />
       </>
     );
   }
 
-  const navItems = [
+  const allNavItems = [
     { id: "dashboard", icon: "📊", label: "Dashboard" },
     { id: "citas", icon: "📅", label: "Citas" },
     { id: "servicios", icon: "✂", label: "Servicios" },
     { id: "estilos", icon: "Est", label: "Estilos" },
     { id: "barberos", icon: "💈", label: "Barberos" },
     { id: "productos", icon: "🛍", label: "Productos" },
+    { id: "personal", icon: "👥", label: "Personal" },
     { id: "membresias", icon: "⭐", label: "Membresías" },
     { id: "galeria", icon: "🖼", label: "Galería" },
     { id: "whatsapp", icon: "📱", label: "WhatsApp" },
   ];
+  const navItems = panelConfig.pages ? allNavItems.filter(item => panelConfig.pages.includes(item.id)) : allNavItems;
 
   const titles = {
     dashboard: "Dashboard",
@@ -2426,6 +2542,7 @@ export default function AdminPanel() {
     estilos: "Estilos de Cortes",
     barberos: "Barberos",
     productos: "Productos",
+    personal: "Personal",
     membresias: "Membresías",
     galeria: "Galería & Imágenes",
     whatsapp: "WhatsApp"
@@ -2437,7 +2554,7 @@ export default function AdminPanel() {
         <aside className={`sidebar ${menuOpen ? 'sidebar-open' : ''}`}>
           <div className="sidebar-logo">
             <div className="sidebar-logo-text">LA <span>FAMA</span></div>
-            <div className="sidebar-tag">Panel Admin</div>
+            <div className="sidebar-tag">Panel {panelConfig.name}</div>
           </div>
           <nav className="sidebar-nav">
             <div className="sidebar-section">Principal</div>
@@ -2497,6 +2614,7 @@ export default function AdminPanel() {
                 {page === "estilos" && <EstilosCortesPanel estilos={estilos} onRefresh={loadData} />}
                 {page === "barberos" && <BarberosPanel barberos={barberos} onRefresh={loadData} />}
                 {page === "productos" && <ProductosPanel onRefresh={loadData} />}
+                {page === "personal" && <PersonalPanel />}
                 {page === "membresias" && <MembresiasPanel usuarios={usuarios} onRefresh={loadData} />}
                 {page === "galeria" && <GaleriaPanel servicios={servicios} onRefresh={loadData} />}
                 {page === "whatsapp" && <WhatsAppPanel />}
