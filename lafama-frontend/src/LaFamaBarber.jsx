@@ -1,15 +1,17 @@
 import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
-import { FaWhatsapp } from "react-icons/fa";
-import { FaInstagram } from "react-icons/fa";
+import { FaWhatsapp, FaInstagram, FaPhoneAlt, FaCut } from "react-icons/fa";
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
+import Navbar from "./components/Navbar";
+import Footer from "./components/Footer";
+import ImageZoomModal from "./components/ImageZoomModal";
+import Membresias from "./components/Membresias";
+import ReservaModal from "./components/ReservaModal";
 
-const API = "http://localhost:3000/api";
+const API = import.meta.env.VITE_API_URL || "http://localhost:3000/api";
 gsap.registerPlugin(ScrollTrigger);
 
-
-const MONTHS = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
 
 const SERVICIOS_IMGS = {
   'corte': 'https://images.unsplash.com/photo-1503951914875-452162b0f3f1?w=800&q=80',
@@ -32,45 +34,11 @@ function getServicioImg(nombre) {
 
 function getImageUrl(img) {
   if (!img) return '';
-  return img.startsWith('/') ? `http://localhost:3000${img}` : img;
-}
-
-function ImageZoomModal({ item, onClose }) {
-  const [zoom, setZoom] = useState({ x: 50, y: 50, scale: 1 });
-  if (!item) return null;
-
-  const moveZoom = (e) => {
-    const rect = e.currentTarget.getBoundingClientRect();
-    const x = ((e.clientX - rect.left) / rect.width) * 100;
-    const y = ((e.clientY - rect.top) / rect.height) * 100;
-    setZoom({ x, y, scale: 2.35 });
-  };
-
-  return (
-    <div className="zoom-modal" onClick={onClose}>
-      <button className="zoom-close" onClick={onClose}>x</button>
-      <div className="zoom-viewer" onClick={e => e.stopPropagation()}>
-        <div
-          className="zoom-image-area"
-          onMouseMove={moveZoom}
-          onMouseLeave={() => setZoom(z => ({ ...z, scale: 1 }))}
-          style={{
-            "--zoom-x": `${zoom.x}%`,
-            "--zoom-y": `${zoom.y}%`,
-            "--zoom-scale": zoom.scale,
-          }}
-        >
-          <img src={item.img} alt={item.title} />
-        </div>
-        <div className="zoom-info">
-          {item.sub && <div className="zoom-sub">{item.sub}</div>}
-          <div className="zoom-title">{item.title}</div>
-          {item.desc && <div className="zoom-desc">{item.desc}</div>}
-          {item.price && <div className="zoom-price">{item.price}</div>}
-        </div>
-      </div>
-    </div>
-  );
+  if (img.startsWith('/')) {
+    const base = API.replace('/api', '');
+    return `${base}${img}`;
+  }
+  return img;
 }
 
 function formatFechaLocal(date) {
@@ -106,41 +74,6 @@ function Toast({ msg, type, onClose }) {
   return <div className={`toast ${type}`}>{msg}</div>;
 }
 
-function Calendario({ selected, onSelect }) {
-  const [view, setView] = useState({ y: new Date().getFullYear(), m: new Date().getMonth() });
-  const today = new Date(); today.setHours(0, 0, 0, 0);
-  const changeMonth = (d) => setView(v => { let m = v.m + d, y = v.y; if (m > 11) { m = 0; y++; } if (m < 0) { m = 11; y--; } return { y, m }; });
-  const first = new Date(view.y, view.m, 1).getDay();
-  const days = new Date(view.y, view.m + 1, 0).getDate();
-  return (
-    <div className="cal">
-      <div className="cal-header">
-        <button className="cal-nav-btn" onClick={() => changeMonth(-1)}>‹</button>
-        <div className="cal-month">{MONTHS[view.m]} {view.y}</div>
-        <button className="cal-nav-btn" onClick={() => changeMonth(1)}>›</button>
-      </div>
-      <div className="cal-days-header">
-        {['Do', 'Lu', 'Ma', 'Mi', 'Ju', 'Vi', 'Sá'].map(d => <div key={d} className="cal-day-name">{d}</div>)}
-      </div>
-      <div className="cal-days">
-        {Array(first).fill(null).map((_, i) => <div key={`e${i}`} className="cal-day empty" />)}
-        {Array(days).fill(null).map((_, i) => {
-          const d = i + 1;
-          const date = new Date(view.y, view.m, d);
-          const isPast = date < today;
-          const isToday = date.toDateString() === today.toDateString();
-          const isSel = selected && date.toDateString() === selected.toDateString();
-          let cls = 'cal-day';
-          if (isPast) cls += ' disabled';
-          else if (isSel) cls += ' selected';
-          else if (isToday) cls += ' today';
-          return <div key={d} className={cls} onClick={() => !isPast && onSelect(date)}>{d}</div>;
-        })}
-      </div>
-    </div>
-  );
-}
-
 function ModalAuth({ onClose, onLogin }) {
   const [modo, setModo] = useState('login');
   const [form, setForm] = useState({ nombre: '', email: '', password: '', telefono: '' });
@@ -169,7 +102,7 @@ function ModalAuth({ onClose, onLogin }) {
 
         {/* Botón Google */}
         <button
-          onClick={() => window.location.href = 'http://localhost:3000/api/auth/google'}
+          onClick={() => window.location.href = `${API.replace('/api', '')}/api/auth/google`}
           style={{
             width: '100%', background: 'none',
             border: '1px solid rgba(255,255,255,0.15)',
@@ -413,7 +346,7 @@ function HeroCarousel({ onReservar, onServicios }) {
       .then(data => {
         if (Array.isArray(data) && data.length > 0) {
           setSlides(data.map(img => ({
-            img: img.url.startsWith('/') ? `http://localhost:3000${img.url}` : img.url,
+            img: getImageUrl(img.url),
             nombre: img.nombre,
             desc: img.descripcion || ''
           })));
@@ -531,6 +464,8 @@ export default function App() {
   const [planesMembresia, setPlanesMembresia] = useState([]);
   const [productos, setProductos] = useState([]);
   const [zoomItem, setZoomItem] = useState(null);
+  const [showReservaModal, setShowReservaModal] = useState(false);
+  const [flippedServicios, setFlippedServicios] = useState(() => new Set());
 
   useEffect(() => {
     // Capturar token de Google OAuth
@@ -568,6 +503,23 @@ export default function App() {
     fetch(`${API}/barberos`).then(r => r.json()).then(d => setBarberos(d)).finally(() => setLoadingBarbs(false));
     fetch(`${API}/membresias`).then(r => r.json()).then(d => { if (Array.isArray(d)) setPlanesMembresia(d); }).catch(() => { });
     fetch(`${API}/productos`).then(r => r.json()).then(d => { if (Array.isArray(d)) setProductos(d); }).catch(() => { });
+
+    // Señales que deja el Navbar cuando te trae de otra página (ej. /productos)
+    const scrollTarget = sessionStorage.getItem('scrollTarget');
+    const targetVista = sessionStorage.getItem('targetVista');
+    const openAuth = sessionStorage.getItem('openAuth');
+    if (scrollTarget) {
+      sessionStorage.removeItem('scrollTarget');
+      setTimeout(() => document.getElementById(scrollTarget)?.scrollIntoView({ behavior: 'smooth' }), 300);
+    }
+    if (targetVista) {
+      sessionStorage.removeItem('targetVista');
+      setVista(targetVista);
+    }
+    if (openAuth) {
+      sessionStorage.removeItem('openAuth');
+      setShowAuth(true);
+    }
   }, []);
 
   useEffect(() => { if (token) { fetchMisCitas(); fetchMiMembresia(); } }, [token]);
@@ -596,6 +548,12 @@ export default function App() {
 
   const toggleServicio = (s) => setSelectedServicios(prev => prev.find(x => x.id === s.id) ? prev.filter(x => x.id !== s.id) : [...prev, s]);
 
+  const toggleFlip = (id) => setFlippedServicios(prev => {
+    const next = new Set(prev);
+    next.has(id) ? next.delete(id) : next.add(id);
+    return next;
+  });
+
   const totalPrecio = selectedServicios.reduce((s, x) => s + x.precio, 0);
 
   const reservar = async () => {
@@ -612,7 +570,7 @@ export default function App() {
       });
       const data = await r.json();
       if (!r.ok) { showToast(data.error || 'Error al agendar', 'error'); }
-      else { setConfirmData(data); setShowConfirm(true); setSelectedServicios([]); setSelectedBarbero(null); setSelectedFecha(null); setSelectedHora(''); setNota(''); fetchMisCitas(); }
+      else { setConfirmData(data); setShowConfirm(true); setShowReservaModal(false); setSelectedServicios([]); setSelectedBarbero(null); setSelectedFecha(null); setSelectedHora(''); setNota(''); fetchMisCitas(); }
     } catch { showToast('Error de conexión', 'error'); }
   };
 
@@ -653,67 +611,38 @@ export default function App() {
       <div className="noise" />
       <Cursor />
 
-      <nav className="nav">
-        <div className="nav-logo" onClick={() => setVista('home')}>LA <span>FAMA</span> BARBER</div>
-        <div className="nav-links">
-          <button className="nav-link" onClick={() => { setVista('home'); window.scrollTo({ top: 0, behavior: 'smooth' }); }}>Inicio</button>
-          <button className="nav-link" onClick={() => { setVista('home'); setTimeout(() => document.getElementById('servicios')?.scrollIntoView({ behavior: 'smooth' }), 100); }}>Servicios</button>
-          <button className="nav-link" onClick={() => { setVista('home'); setTimeout(() => document.getElementById('membresias')?.scrollIntoView({ behavior: 'smooth' }), 100); }}>Membresías</button>
-          <button className="nav-link" onClick={() => navigate('/productos')}>Productos</button>
-          <button className="nav-link" onClick={() => { setVista('home'); setTimeout(() => document.getElementById('booking')?.scrollIntoView({ behavior: 'smooth' }), 100); }}>Reservar</button>
-          {usuario && <button className="nav-link" onClick={() => setVista('citas')}>Mis Citas</button>}
-          {usuario ? (
-            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                {usuario.foto ? (
-                  <div style={{
-                    width: 32, height: 32, borderRadius: '50%',
-                    backgroundImage: `url(${usuario.foto})`,
-                    backgroundSize: 'cover', backgroundPosition: 'center',
-                    border: '2px solid var(--rojo)'
-                  }} />
-                ) : (
-                  <div style={{
-                    width: 32, height: 32, borderRadius: '50%',
-                    background: 'var(--rojo)',
-                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    fontSize: 14, fontWeight: 700, color: 'var(--blanco)'
-                  }}>
-                    {usuario.nombre?.charAt(0).toUpperCase()}
-                  </div>
-                )}
-                <span style={{ fontSize: 12, letterSpacing: 1, color: 'var(--blanco)', fontFamily: "'Oswald', sans-serif" }}>
-                  {usuario.nombre?.toUpperCase()}
-                </span>
-                {miMembresia && (
-                  <span style={{ fontSize: 9, letterSpacing: 2, textTransform: 'uppercase', background: 'var(--rojo)', color: 'var(--blanco)', padding: '2px 8px', fontFamily: "'Oswald', sans-serif" }}>
-                    ⭐ {miMembresia.membresia?.nombre}
-                  </span>
-                )}
-                {miMembresia?.alertaVencimiento && (
-                  <div style={{ background: 'rgba(212,168,67,0.1)', border: '1px solid rgba(212,168,67,0.4)', padding: '12px 20px', marginBottom: 12, fontSize: 12, color: '#d4a843', letterSpacing: 1, display: 'flex', alignItems: 'center', gap: 10 }}>
-                    ⚠️ Tu membresía <strong>{miMembresia.membresia?.nombre}</strong> vence en {miMembresia.diasRestantes} día(s)
-                  </div>
-                )}
-                {miMembresia?.alertaConsumo && (
-                  <div style={{ background: 'rgba(192,57,43,0.1)', border: '1px solid rgba(192,57,43,0.3)', padding: '12px 20px', marginBottom: 12, fontSize: 12, color: 'var(--rojo)', letterSpacing: 1, display: 'flex', alignItems: 'center', gap: 10 }}>
-                    🔔 Te queda solo <strong>1 corte</strong> disponible en tu membresía
-                  </div>
-                )}
-              </div>
-              <button className="nav-btn" onClick={logout}>SALIR</button>
-            </div>
-          ) : (
-            <button className="nav-btn" onClick={() => setShowAuth(true)}>ENTRAR</button>
-          )}
-        </div>
-      </nav>
+      <Navbar
+        usuario={usuario}
+        miMembresia={miMembresia}
+        onMisCitas={() => setVista('citas')}
+        onLogout={logout}
+        onEntrar={() => setShowAuth(true)}
+      />
 
       {vista === 'home' && (<>
         <HeroCarousel
-          onReservar={() => document.getElementById('booking')?.scrollIntoView({ behavior: 'smooth' })}
+          onReservar={() => setShowReservaModal(true)}
           onServicios={() => document.getElementById('servicios')?.scrollIntoView({ behavior: 'smooth' })}
         />
+
+        <section className="qs-section" id="nosotros">
+          <div className="qs-img" style={{ backgroundImage: "url('https://images.unsplash.com/photo-1585747860715-2ba37e788b70?w=1200&q=85')" }} />
+          <div className="qs-text">
+            <span className="section-tag">Bienvenido</span>
+            <h2 className="section-title">QUIÉNES<br /><span style={{ color: 'var(--rojo)' }}>SOMOS</span></h2>
+            <p className="qs-lead">
+              La Fama Barber nació en Medellín con una idea simple: el estilo no se improvisa, se construye con técnica, tiempo y buena conversación. Somos un equipo de barberos —All Stars— que se especializó en fades, diseño de barba y cortes clásicos, para que cada visita se sienta menos como un trámite y más como un ritual.
+            </p>
+            <p className="qs-copy">
+              No trabajamos en serie. Cada corte empieza escuchando qué quieres proyectar, y termina con un acabado que puedas mantener fácil en tu día a día. Por eso nuestros clientes vuelven.
+            </p>
+            <div className="qs-stats">
+              <div className="qs-stat"><span className="qs-stat-num">10<b>+</b></span><span className="qs-stat-label">Años de oficio</span></div>
+              <div className="qs-stat"><span className="qs-stat-num">5K<b>+</b></span><span className="qs-stat-label">Clientes atendidos</span></div>
+              <div className="qs-stat"><span className="qs-stat-num">100<b>%</b></span><span className="qs-stat-label">A tu estilo</span></div>
+            </div>
+          </div>
+        </section>
 
         <BarberExperience />
 
@@ -727,21 +656,45 @@ export default function App() {
           </div>
           {loadingSvcs ? <div className="loading"><div className="spinner" />Cargando servicios...</div> :
             <div className="servicios-grid">
-              {servicios.map(s => (
-                <div key={s.id} className={`servicio-card ${selectedServicios.find(x => x.id === s.id) ? 'selected' : ''}`} onClick={() => toggleServicio(s)}>
-                  <div className="servicio-card-bg" style={{ backgroundImage: `url(${s.imagen ? (s.imagen.startsWith('/') ? `http://localhost:3000${s.imagen}` : s.imagen) : getServicioImg(s.nombre)})` }} />
-                  <div className="servicio-tag-top">{getIcon(s.nombre)} {s.duracion} min</div>
-                  <div className="servicio-check">✓</div>
-                  <div className="servicio-card-content">
-                    <div className="servicio-nombre">{s.nombre}</div>
-                    <div className="servicio-desc">{s.descripcion}</div>
-                    <div className="servicio-footer">
-                      <div className="servicio-precio">{formatPrecio(s.precio)}</div>
-                      <div className="servicio-duracion">{s.duracion} minutos</div>
+              {servicios.map(s => {
+                const sel = selectedServicios.find(x => x.id === s.id);
+                const flipped = flippedServicios.has(s.id);
+                return (
+                  <div key={s.id} className="servicio-flip-wrap">
+                    <div className={`servicio-card ${flipped ? 'flipped' : ''}`} onClick={() => toggleFlip(s.id)}>
+                      <div className="servicio-face servicio-face-front">
+                        <div className="servicio-card-bg" style={{ backgroundImage: `url(${s.imagen ? getImageUrl(s.imagen) : getServicioImg(s.nombre)})` }} />
+                        <div className="servicio-tag-top">{getIcon(s.nombre)} {s.duracion} min</div>
+                        {sel && <div className="servicio-check">✓</div>}
+                        <div className="servicio-card-content">
+                          <div className="servicio-nombre">{s.nombre}</div>
+                          <div className="servicio-footer">
+                            <div className="servicio-precio">{formatPrecio(s.precio)}</div>
+                            <div className="servicio-flip-hint">Ver detalle ↻</div>
+                          </div>
+                        </div>
+                      </div>
+                      <div className="servicio-face servicio-face-back">
+                        <div>
+                          <div className="servicio-nombre">{s.nombre}</div>
+                          <div className="servicio-duracion" style={{ marginBottom: 12 }}>{s.duracion} minutos</div>
+                          <p className="servicio-desc-back">{s.descripcion}</p>
+                        </div>
+                        <div className="servicio-back-footer">
+                          <div className="servicio-precio">{formatPrecio(s.precio)}</div>
+                          <button
+                            type="button"
+                            className={`servicio-select-btn ${sel ? 'selected' : ''}`}
+                            onClick={(e) => { e.stopPropagation(); toggleServicio(s); }}
+                          >
+                            {sel ? '✓ Elegido' : 'Elegir'}
+                          </button>
+                        </div>
+                      </div>
                     </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           }
         </section>
@@ -756,66 +709,41 @@ export default function App() {
             <div className="barberos-grid">
               {barberos.map((b, i) => (
                 <div key={b.id} className={`barbero-card ${selectedBarbero?.id === b.id ? 'selected' : ''}`} onClick={() => setSelectedBarbero(b)}>
+                  {b.foto ? (
+                    <div className="barbero-card-bg" style={{ backgroundImage: `url(${getImageUrl(b.foto)})` }} />
+                  ) : (
+                    <div className="barbero-card-placeholder">{['👨🏻', '👨🏽', '👨🏾'][i % 3]}</div>
+                  )}
                   <div className="barbero-selected-badge">✓</div>
-                  <div className="barbero-avatar" style={{
-                    backgroundImage: b.foto ? `url(${b.foto.startsWith('/') ? 'http://localhost:3000' + b.foto : b.foto})` : 'none',
-                  }}>
-                    {!b.foto && ['👨🏻', '👨🏽', '👨🏾'][i % 3]}
+                  <div className="barbero-card-content">
+                    <div className="barbero-esp-tag">{b.especialidad}</div>
+                    <div className="barbero-nombre">{b.nombre}</div>
+                    {b.descripcion && <div className="barbero-desc">{b.descripcion}</div>}
                   </div>
-                  <div className="barbero-nombre">{b.nombre}</div>
-                  <div className="barbero-esp">{b.especialidad}</div>
-                  {b.descripcion && <div className="barbero-desc">{b.descripcion}</div>}
                 </div>
               ))}
             </div>
           }
         </section>
 
-        <section className="section booking-section" id="booking">
+        <section className="section booking-section booking-cta-section" id="booking">
           <div className="section-header">
             <span className="section-tag">Agenda tu turno</span>
             <h2 className="section-title">RESERVA<br /><span style={{ color: 'var(--rojo)' }}>TU CITA</span></h2>
           </div>
 
-          <div className="booking-grid">
-            <div>
-              <label className="form-label">Fecha</label>
-              <Calendario selected={selectedFecha} onSelect={setSelectedFecha} />
-              <label className="form-label">Hora disponible</label>
-              <div className="times-grid">
-                {!selectedServicios.length && <p className="rp-empty" style={{ fontSize: 12, opacity: 0.6 }}>Elige un servicio primero</p>}
-                {selectedServicios.length > 0 && !selectedBarbero && <p className="rp-empty" style={{ fontSize: 12, opacity: 0.6 }}>Elige un barbero</p>}
-                {selectedServicios.length > 0 && selectedBarbero && !selectedFecha && <p className="rp-empty" style={{ fontSize: 12, opacity: 0.6 }}>Elige una fecha</p>}
-                {loadingSlots && <p className="rp-empty" style={{ fontSize: 12, opacity: 0.6 }}>Cargando horarios...</p>}
-                {!loadingSlots && selectedBarbero && selectedFecha && selectedServicios.length > 0 && slotsDisponibles.length === 0 && (
-                  <p className="rp-empty" style={{ fontSize: 12, opacity: 0.6 }}>No hay horarios disponibles ese día</p>
-                )}
-                {slotsDisponibles.map(t => (
-                  <div key={t}
-                    className={`time-slot ${selectedHora === t ? 'selected' : ''}`}
-                    onClick={() => setSelectedHora(t)}>
-                    {t}
-                  </div>
-                ))}
+          <div className="booking-cta-box">
+            {(selectedServicios.length > 0 || selectedBarbero) ? (
+              <div className="booking-cta-resumen">
+                {selectedServicios.length > 0 && <span>{selectedServicios.map(s => s.nombre).join(' + ')}</span>}
+                {selectedBarbero && <span>con {selectedBarbero.nombre}</span>}
               </div>
-              <label className="form-label">Nota para el barbero (opcional)</label>
-              <textarea className="form-input" placeholder="Ej: Quiero el degradado bajo..." rows={3} value={nota} onChange={e => setNota(e.target.value)} style={{ resize: 'none' }} />
-            </div>
-            <div className="booking-summary">
-              <div className="summary-title">TU RESERVA</div>
-              <div className="summary-row"><span className="summary-key">Servicios</span><span className="summary-val">{selectedServicios.length ? selectedServicios.map(s => s.nombre).join(', ') : '—'}</span></div>
-              <div className="summary-row"><span className="summary-key">Barbero</span><span className="summary-val">{selectedBarbero?.nombre || '—'}</span></div>
-              <div className="summary-row"><span className="summary-key">Fecha</span><span className="summary-val">{selectedFecha ? selectedFecha.toLocaleDateString('es-CO', { weekday: 'long', day: 'numeric', month: 'long' }) : '—'}</span></div>
-              <div className="summary-row"><span className="summary-key">Hora</span><span className="summary-val">{selectedHora || '—'}</span></div>
-              <div className="summary-row"><span className="summary-key">Cliente</span><span className="summary-val">{usuario?.nombre || '—'}</span></div>
-              <div className="summary-total">
-                <span className="summary-total-label">Total</span>
-                <span className="summary-total-val">{formatPrecio(totalPrecio)}</span>
-              </div>
-              <button className="btn-reservar" onClick={reservar} disabled={!selectedServicios.length || !selectedBarbero || !selectedFecha || !selectedHora}>
-                {usuario ? 'CONFIRMAR CITA' : 'INICIA SESIÓN PARA RESERVAR'}
-              </button>
-            </div>
+            ) : (
+              <p className="booking-cta-copy">Elige tus servicios y barbero arriba, o dale directo a reservar y lo eliges en el paso a paso.</p>
+            )}
+            <button className="btn-reservar" style={{ margin: 0 }} onClick={() => setShowReservaModal(true)}>
+              CONTINUAR CON TU RESERVA →
+            </button>
           </div>
         </section>
       </>)}
@@ -861,16 +789,33 @@ export default function App() {
           )}
           {loadingCitas ? <div className="loading"><div className="spinner" />Cargando...</div> :
             misCitas.length === 0 ? <div className="empty-state">No tienes citas agendadas aún.</div> :
-              <div className="citas-grid">
-                {misCitas.map(c => (
-                  <div key={c.id} className="cita-card">
-                    <div className={`cita-estado estado-${c.estado}`}>{c.estado}</div>
-                    <div className="cita-servicio">{c.servicios?.map(s => s.servicio?.nombre).join(' + ')}</div>
-                    <div className="cita-detail"><span>👤</span> {c.barbero?.nombre}</div>
-                    <div className="cita-detail"><span>📅</span> {formatFecha(c.fecha)}</div>
-                    <div className="cita-detail"><span>🕐</span> {c.hora}</div>
-                    {c.nota && <div className="cita-detail"><span>📝</span> {c.nota}</div>}
-                    {c.estado === 'PENDIENTE' && <button className="cita-cancelar" onClick={() => cancelarCita(c.id)}>CANCELAR CITA</button>}
+              <div className="citas-grupos">
+                {Object.entries(
+                  misCitas.reduce((grupos, c) => {
+                    const key = c.servicios?.map(s => s.servicio?.nombre).join(' + ') || 'Servicio';
+                    (grupos[key] = grupos[key] || []).push(c);
+                    return grupos;
+                  }, {})
+                ).map(([servicio, citasGrupo]) => (
+                  <div key={servicio} className="cita-grupo">
+                    <div className="cita-grupo-header">
+                      <div className="cita-grupo-nombre">{servicio}</div>
+                      <div className="cita-grupo-count">{citasGrupo.length}×</div>
+                    </div>
+                    <div className="cita-grupo-lista">
+                      {citasGrupo.map(c => (
+                        <div key={c.id} className="cita-item">
+                          <span className={`cita-item-estado estado-${c.estado}`}>{c.estado}</span>
+                          <div className="cita-item-info">
+                            <span className="cita-item-detalle">👤 {c.barbero?.nombre}</span>
+                            <span className="cita-item-detalle">📅 {formatFecha(c.fecha)}</span>
+                            <span className="cita-item-detalle">🕐 {c.hora}</span>
+                            {c.nota && <span className="cita-item-detalle">📝 {c.nota}</span>}
+                          </div>
+                          {c.estado === 'PENDIENTE' && <button className="cita-item-cancelar" onClick={() => cancelarCita(c.id)}>Cancelar</button>}
+                        </div>
+                      ))}
+                    </div>
                   </div>
                 ))}
               </div>
@@ -880,164 +825,8 @@ export default function App() {
 
 
 
-      {/* ── SECCIÓN MEMBRESÍAS ── */}
-      {vista === 'home' && (
-        <section className="membresias-section" id="membresias">
-          <div className="section-header">
-            <span className="section-tag">Planes exclusivos</span>
-            <h2 className="section-title">ELIGE TU<br /><span style={{ color: 'var(--rojo)' }}>MEMBRESÍA</span></h2>
-          </div>
-
-          <div className="membresias-intro">
-            <p className="membresias-intro-text">
-              Cada una de nuestras membresías está diseñada para que siempre seas nuestra máxima prioridad.
-              El número de cupos es limitado para garantizarte la mejor atención.
-            </p>
-            <div className="membresias-aviso">
-              <div className="membresias-aviso-txt">
-                <strong>Corte sin membresía: $20.000 &nbsp;·&nbsp; Corte + Barba sin membresía: $30.000</strong><br />
-                Con membresía aplica descuento según plan. Válidos por el periodo contratado.
-              </div>
-            </div>
-          </div>
-          <div className="planes-grid">
-            {planesMembresia.length > 0 ? planesMembresia.map((plan, i) => (
-              <div key={plan.id} className={`plan-card ${i === Math.floor(planesMembresia.length / 2) ? 'featured' : ''}`}>
-                {i === Math.floor(planesMembresia.length / 2) && <div className="plan-badge">Más Popular</div>}
-                <div className="plan-nombre">{plan.nombre}</div>
-                {plan.descripcion && <div className="plan-tipo">{plan.descripcion}</div>}
-                <div className="plan-precio-wrap">
-                  <div className="plan-precio"><span className="currency">$</span>{Number(plan.precio).toLocaleString('es-CO')}</div>
-                  <span className="plan-periodo">/ {plan.cortesIncluidos} cortes</span>
-                </div>
-                {plan.descuento > 0 && <div className="plan-con-membresia">{plan.descuento}% descuento en servicios</div>}
-                <div className="plan-divider" />
-                {plan.beneficios && (
-                  <ul className="plan-beneficios">
-                    {plan.beneficios.split('\n').filter(b => b.trim()).map((b, j) => (
-                      <li key={j}><span className="plan-check-yes">✓</span> {b.trim()}</li>
-                    ))}
-                  </ul>
-                )}
-                <button className="plan-btn" onClick={() => window.open(`https://wa.me/573013090185?text=Hola%2C%20quiero%20el%20plan%20${encodeURIComponent(plan.nombre)}`, '_blank')}>
-                  SOLICITAR PLAN
-                </button>
-              </div>
-            )) : (
-              <>
-                <div className="plan-card">
-                  <div className="plan-nombre">VIP</div>
-                  <div className="plan-tipo">Solo Corte · 1 Mes</div>
-                  <div className="plan-precio-wrap">
-                    <div className="plan-precio"><span className="currency">$</span>38.000</div>
-                    <span className="plan-periodo">/ 2 cortes</span>
-                  </div>
-                  <span className="plan-ahorro">Ahorras $2.000</span>
-                  <div className="plan-sin-membresia">Sin membresía: <span className="plan-tachado">$40.000</span></div>
-                  <div className="plan-con-membresia">Con membresía: <strong>$19.000 / corte</strong></div>
-                  <div className="plan-validez">Válido por 1 mes</div>
-                  <div className="plan-divider" />
-                  <ul className="plan-beneficios">
-                    <li><span className="plan-check-yes">✓</span> 2 Cortes incluidos</li>
-                    <li><span className="plan-check-yes">✓</span> Reserva prioritaria</li>
-                    <li><span className="plan-check-yes">✓</span> 20% dto. productos marca propia</li>
-                    <li><span className="plan-check-yes">✓</span> 20% dto. servicios seleccionados</li>
-                  </ul>
-                  <button className="plan-btn" onClick={() => window.open('https://wa.me/573013090185?text=Hola%2C%20quiero%20el%20plan%20VIP%201%20mes', '_blank')}>SOLICITAR PLAN</button>
-                </div>
-
-                <div className="plan-card">
-                  <div className="plan-nombre">VIP PLUS</div>
-                  <div className="plan-tipo">Corte + Barba · 1 Mes</div>
-                  <div className="plan-precio-wrap">
-                    <div className="plan-precio"><span className="currency">$</span>58.000</div>
-                    <span className="plan-periodo">/ 2 servicios</span>
-                  </div>
-                  <span className="plan-ahorro">Ahorras $2.000</span>
-                  <div className="plan-sin-membresia">Sin membresía: <span className="plan-tachado">$60.000</span></div>
-                  <div className="plan-con-membresia">Con membresía: <strong>$29.000 / servicio</strong></div>
-                  <div className="plan-validez">Válido por 1 mes</div>
-                  <div className="plan-divider" />
-                  <ul className="plan-beneficios">
-                    <li><span className="plan-check-yes">✓</span> 2 Cortes + Barba incluidos</li>
-                    <li><span className="plan-check-yes">✓</span> Reserva prioritaria</li>
-                    <li><span className="plan-check-yes">✓</span> 20% dto. productos marca propia</li>
-                    <li><span className="plan-check-yes">✓</span> 20% dto. servicios seleccionados</li>
-                  </ul>
-                  <button className="plan-btn" onClick={() => window.open('https://wa.me/573013090185?text=Hola%2C%20quiero%20el%20plan%20VIP%20PLUS%201%20mes', '_blank')}>SOLICITAR PLAN</button>
-                </div>
-
-                <div className="plan-card featured">
-                  <div className="plan-badge">Más Popular</div>
-                  <div className="plan-nombre">BLACK</div>
-                  <div className="plan-tipo">Solo Corte · 2 Meses</div>
-                  <div className="plan-precio-wrap">
-                    <div className="plan-precio"><span className="currency">$</span>72.000</div>
-                    <span className="plan-periodo">/ 4 cortes</span>
-                  </div>
-                  <span className="plan-ahorro">Ahorras $8.000</span>
-                  <div className="plan-sin-membresia">Sin membresía: <span className="plan-tachado">$80.000</span></div>
-                  <div className="plan-con-membresia">Con membresía: <strong>$18.000 / corte</strong></div>
-                  <div className="plan-validez">Válido por 2 meses</div>
-                  <div className="plan-divider" />
-                  <ul className="plan-beneficios">
-                    <li><span className="plan-check-yes">✓</span> 4 Cortes incluidos</li>
-                    <li><span className="plan-check-yes">✓</span> Reserva prioritaria</li>
-                    <li><span className="plan-check-yes">✓</span> 20% dto. productos marca propia</li>
-                    <li><span className="plan-check-yes">✓</span> 20% dto. servicios seleccionados</li>
-                  </ul>
-                  <button className="plan-btn" onClick={() => window.open('https://wa.me/573013090185?text=Hola%2C%20quiero%20el%20plan%20BLACK%202%20meses', '_blank')}>SOLICITAR PLAN</button>
-                </div>
-
-                <div className="plan-card featured">
-                  <div className="plan-badge">Premium</div>
-                  <div className="plan-nombre">BLACK PLUS</div>
-                  <div className="plan-tipo">Corte + Barba · 2 Meses</div>
-                  <div className="plan-precio-wrap">
-                    <div className="plan-precio"><span className="currency">$</span>112.000</div>
-                    <span className="plan-periodo">/ 4 servicios</span>
-                  </div>
-                  <span className="plan-ahorro">Ahorras $8.000</span>
-                  <div className="plan-sin-membresia">Sin membresía: <span className="plan-tachado">$120.000</span></div>
-                  <div className="plan-con-membresia">Con membresía: <strong>$28.000 / servicio</strong></div>
-                  <div className="plan-validez">Válido por 2 meses</div>
-                  <div className="plan-divider" />
-                  <ul className="plan-beneficios">
-                    <li><span className="plan-check-yes">✓</span> 4 Cortes + Barba incluidos</li>
-                    <li><span className="plan-check-yes">✓</span> Reserva prioritaria</li>
-                    <li><span className="plan-check-yes">✓</span> 20% dto. productos marca propia</li>
-                    <li><span className="plan-check-yes">✓</span> 20% dto. servicios seleccionados</li>
-                  </ul>
-                  <button className="plan-btn" onClick={() => window.open('https://wa.me/573013090185?text=Hola%2C%20quiero%20el%20plan%20BLACK%20PLUS%202%20meses', '_blank')}>SOLICITAR PLAN</button>
-                </div>
-              </>
-            )}
-          </div> {/* ← cierre planes-grid AQUÍ, fuera del ternario */}
-
-          {/* Términos y condiciones */}
-          <div className="terminos-section">
-            <div className="terminos-title">Términos y Condiciones</div>
-            <ul className="terminos-list">
-              <li>Las reservas están sujetas a la disponibilidad de la agenda.</li>
-              <li>Límite máximo de uso según la vigencia del plan (1 o 2 meses).</li>
-              <li>20% de descuento en productos de marca propia y servicios seleccionados: Cejas, Mascarillas Faciales y servicios adicionales. No aplica para químicos (keratinas, tintes, decoloraciones, entre otros).</li>
-              <li>Las membresías pueden transferirse a familiares o amigos con autorización del titular y reserva desde el perfil asociado.</li>
-              <li>La cancelación de la reserva debe realizarse con mínimo 40 minutos de antelación; de lo contrario, el servicio será descontado del plan.</li>
-              <li>Los servicios solo pueden reservarse en la sede correspondiente al plan adquirido.</li>
-              <li>No existe compromiso a largo plazo y no se ofrece devolución del dinero.</li>
-              <li>Se aplican condiciones y restricciones adicionales.</li>
-            </ul>
-          </div>
-
-          <div className="membresias-footer">
-            <div className="membresias-footer-item"><div className="membresias-footer-dot"></div><span className="membresias-footer-txt">Cupos limitados</span></div>
-            <div className="membresias-footer-item"><div className="membresias-footer-dot"></div><span className="membresias-footer-txt">Sin compromiso largo plazo</span></div>
-            <div className="membresias-footer-item"><div className="membresias-footer-dot"></div><span className="membresias-footer-txt">Transferible a familiares</span></div>
-            <div className="membresias-footer-item"><div className="membresias-footer-dot"></div><span className="membresias-footer-txt">Solicitar por WhatsApp</span></div>
-          </div>
-
-        </section>
-      )}
+      {/* Sección de membresías trasladada a la ruta pública /membresias. */}
+      {false && vista === 'home' && <Membresias planesMembresia={planesMembresia} />}
 
       {/* Catálogo trasladado a la ruta pública /productos. */}
       {false && vista === 'home' && (
@@ -1191,20 +980,7 @@ export default function App() {
         />
       </section>}
 
-      <footer className="footer">
-        <div className="footer-logo">LA <span>FAMA</span> BARBER</div>
-        <div className="footer-text">© 2025 La Fama Barber · All Stars · Medellín, Colombia</div>
-        <div className="footer-text" style={{ color: 'var(--rojo)' }}>✦ All Stars</div>
-        <button
-          onClick={() => navigate('/barbero')}
-          style={{ fontSize: 11, letterSpacing: 3, textTransform: "uppercase", color: "var(--gris)", background: "none", border: "none", borderBottom: "1px solid rgba(255,255,255,0.1)", paddingBottom: 2, cursor: "pointer", fontFamily: "'Oswald', sans-serif" }}
-          onMouseEnter={e => e.target.style.color = "var(--rojo)"}
-          onMouseLeave={e => e.target.style.color = "var(--gris)"}
-        >✂ Acceso Barberos</button>
-
-
-
-      </footer>
+      <Footer />
 
       {showAuth && <ModalAuth onClose={() => setShowAuth(false)} onLogin={(u, t) => {
         setUsuario(u);
@@ -1235,26 +1011,67 @@ export default function App() {
 
       <ImageZoomModal item={zoomItem} onClose={() => setZoomItem(null)} />
 
-      {/* 📸 BOTÓN FLOTANTE INSTAGRAM */}
-      <a
-        href="https://www.instagram.com/TU_USUARIO"
-        target="_blank"
-        rel="noopener noreferrer"
-        className="instagram-float"
-      >
-        <FaInstagram />
-      </a>
+      <ReservaModal
+        open={showReservaModal}
+        onClose={() => setShowReservaModal(false)}
+        servicios={servicios}
+        barberos={barberos}
+        selectedServicios={selectedServicios}
+        onToggleServicio={toggleServicio}
+        selectedBarbero={selectedBarbero}
+        onSelectBarbero={setSelectedBarbero}
+        selectedFecha={selectedFecha}
+        onSelectFecha={setSelectedFecha}
+        selectedHora={selectedHora}
+        onSelectHora={setSelectedHora}
+        slotsDisponibles={slotsDisponibles}
+        loadingSlots={loadingSlots}
+        nota={nota}
+        onNotaChange={setNota}
+        totalPrecio={totalPrecio}
+        usuario={usuario}
+        onConfirmar={reservar}
+      />
 
-      {/* 🔥 BOTÓN FLOTANTE WHATSAPP */}
-      <a
-        href="https://wa.me/573013090185?text=Hola%20quiero%20agendar%20un%20corte%20"
-        target="_blank"
-        rel="noopener noreferrer"
-        className="whatsapp-float"
-      >
-        <FaWhatsapp />
-      </a>
+      {/* Botones flotantes: WhatsApp + Instagram en un solo contenedor fijo */}
+      <div className="floating-actions">
+        <a
+          href="https://www.instagram.com/TU_USUARIO"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="instagram-float"
+        >
+          <FaInstagram />
+        </a>
 
+        <a
+          href="https://wa.me/573013090185?text=Hola%20quiero%20agendar%20un%20corte%20"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="whatsapp-float"
+        >
+          <FaWhatsapp />
+        </a>
+      </div>
+
+      <div className="mobile-action-bar">
+        <a href="https://www.instagram.com/TU_USUARIO" target="_blank" rel="noopener noreferrer" className="mab-item mab-instagram">
+          <FaInstagram className="mab-icon" />
+          <span className="mab-label">Instagram</span>
+        </a>
+        <a href="https://wa.me/573013090185?text=Hola%20quiero%20agendar%20un%20corte" target="_blank" rel="noopener noreferrer" className="mab-item mab-whatsapp">
+          <FaWhatsapp className="mab-icon" />
+          <span className="mab-label">WhatsApp</span>
+        </a>
+        <a href="tel:+573013090185" className="mab-item">
+          <FaPhoneAlt className="mab-icon" />
+          <span className="mab-label">Llamar</span>
+        </a>
+        <button className="mab-item mab-cta" onClick={() => setShowReservaModal(true)}>
+          <FaCut className="mab-icon" />
+          <span className="mab-label">Reservar</span>
+        </button>
+      </div>
 
     </>
 
