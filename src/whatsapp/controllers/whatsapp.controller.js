@@ -61,11 +61,7 @@ class WhatsAppController {
             console.log(response);
             console.log("=============================");
 
-            if (!response?.success) {
-                return res.sendStatus(200);
-            }
-
-            if (response.message) {
+            if (response?.message) {
 
                 await whatsappService.sendTextMessage(
                     phone,

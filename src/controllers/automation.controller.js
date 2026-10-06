@@ -23,9 +23,9 @@ class AutomationController {
     async chat(req, res, next) {
         try {
 
-            const { message } = req.body;
+            const { phone, message } = req.body;
 
-            const result = await automationService.chat(message);
+            const result = await automationService.chat({ phone, message });
 
             return res.status(200).json(result);
 

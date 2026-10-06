@@ -6,8 +6,9 @@ const CONVERSATION_STEPS = require("../automation/conversation/conversationSteps
 const barberosService = require("./barberos.service");
 const dateParser = require("../automation/parsers/dateParser");
 const timeParser = require("../automation/parsers/timeParser");
-const bookingService = require("../automation/booking/booking.service");
-const bookingFlow = require("../automation/flows/booking.flow");
+const availabilityService = require("../automation/services/availability.service");
+const usuariosService = require("./usuarios.service");
+const citasService = require("./citas.service");
 
 class AutomationService {
     async getMenu() {
@@ -81,9 +82,12 @@ class AutomationService {
 
         }
 
-        // Selección por nombre
+        // Selección por nombre (coincidencia parcial: "corte" encuentra
+        // "Corte Clásico", no hace falta escribirlo exacto)
+        const textoLower = text.toLowerCase();
         return servicios.find(servicio =>
-            servicio.nombre.toLowerCase() === text.toLowerCase()
+            servicio.nombre.toLowerCase().includes(textoLower) ||
+            textoLower.includes(servicio.nombre.toLowerCase())
         );
 
     }
@@ -105,9 +109,11 @@ class AutomationService {
 
         }
 
-        // Selección por nombre
+        // Selección por nombre (coincidencia parcial, igual que servicios)
+        const textoLower = text.toLowerCase();
         return barberos.find(barbero =>
-            barbero.nombre.toLowerCase() === text.toLowerCase()
+            barbero.nombre.toLowerCase().includes(textoLower) ||
+            textoLower.includes(barbero.nombre.toLowerCase())
         );
 
     }
@@ -120,7 +126,7 @@ class AutomationService {
             return {
                 success: false,
                 message:
-                    "No encontré ese servicio. Escríbelo exactamente como aparece en la lista.",
+                    "No encontré ese servicio. Escríbelo exactamente como aparece en la lista, o escribe 'cancelar' para volver al menú.",
             };
         }
 
@@ -152,7 +158,7 @@ class AutomationService {
         if (!barber) {
             return {
                 success: false,
-                message: "No encontré ese barbero. Escríbelo exactamente como aparece en la lista.",
+                message: "No encontré ese barbero. Escríbelo exactamente como aparece en la lista, o escribe 'cancelar' para volver al menú.",
             };
         }
 
@@ -173,7 +179,7 @@ class AutomationService {
 
     }
 
-    async processSelectDate(phone, message) {
+    async processSelectDate(phone, context, message) {
 
         const date = dateParser.parse(message);
 
@@ -185,9 +191,23 @@ class AutomationService {
             };
         }
 
+        const slots = await availabilityService.getAvailableSlots({
+            barberoId: context.barber.id,
+            fecha: date,
+            servicioId: context.service.id,
+        });
+
+        if (slots.length === 0) {
+            return {
+                success: false,
+                message: `No hay horarios disponibles con ${context.barber.nombre} ese día. Escribe otra fecha (YYYY-MM-DD).`,
+            };
+        }
+
         conversationManager.update(phone, {
             step: CONVERSATION_STEPS.SELECT_TIME,
             date,
+            availableSlots: slots,
         });
 
         console.log(
@@ -197,7 +217,8 @@ class AutomationService {
 
         return {
             success: true,
-            message: `Perfecto. Reservaremos para el día ${date}. Ahora escribe la hora que deseas (por ejemplo: 14:30).`,
+            message: `Horarios disponibles para el ${date}:\n${slots.join(', ')}\n\nEscribe la hora que quieras (ej: ${slots[0]}).`,
+            data: slots,
         };
 
     }
@@ -212,6 +233,15 @@ class AutomationService {
                 success: false,
                 message:
                     "Hora inválida. Usa el formato HH:mm. Ejemplo: 14:30.",
+            };
+        }
+
+        const slotsDisponibles = context.availableSlots || [];
+
+        if (!slotsDisponibles.includes(time)) {
+            return {
+                success: false,
+                message: `Esa hora no está disponible. Elige una de estas: ${slotsDisponibles.join(', ')}.`,
             };
         }
 
@@ -241,46 +271,41 @@ class AutomationService {
 
     async processConfirmation(phone, context, message) {
 
-        const available = await bookingService.isTimeAvailable(
-            context.barber.id,
-            context.date,
-            context.time
-        );
-
-        if (!available) {
-
-            return {
-                success: false,
-                message:
-                    "Ese horario ya no está disponible. Elige otra hora.",
-            };
-
-        }
-
         if (message.trim().toUpperCase() !== "CONFIRMAR") {
             return {
                 success: false,
                 message:
-                    "Escribe CONFIRMAR para finalizar la reserva.",
+                    'Escribe CONFIRMAR para finalizar la reserva.',
             };
         }
 
         const usuario =
             await usuariosService.obtenerOCrearPorTelefono(phone);
 
-        await citasService.agendar({
+        try {
+            await citasService.agendar({
 
-            usuarioId: usuario.id,
+                usuarioId: usuario.id,
 
-            barberoId: context.barber.id,
+                barberoId: context.barber.id,
 
-            servicioIds: [context.service.id],
+                servicioIds: [context.service.id],
 
-            fecha: context.date,
+                fecha: context.date,
 
-            hora: context.time
+                hora: context.time
 
-        });
+            });
+        } catch (err) {
+            // citasService.agendar ya revalida disponibilidad real al
+            // momento de crear — si alguien más tomó ese horario mientras
+            // el cliente confirmaba, avisamos en vez de dejar la
+            // conversación atascada.
+            return {
+                success: true,
+                message: `No se pudo completar la reserva: ${err.message || 'ese horario ya no está disponible'}. Escribe "reservar" para intentar de nuevo.`,
+            };
+        }
 
         conversationManager.clear(phone);
 
@@ -306,7 +331,7 @@ class AutomationService {
                 return this.processSelectBarber(phone, message);
 
             case CONVERSATION_STEPS.SELECT_DATE:
-                return this.processSelectDate(phone, message);
+                return this.processSelectDate(phone, context, message);
 
             case CONVERSATION_STEPS.SELECT_TIME:
                 return this.processSelectTime(phone, context, message);
@@ -337,15 +362,24 @@ class AutomationService {
         );
         console.log("Contexto al iniciar chat:", context);
 
-        const bookingResponse =
-            await bookingFlow.execute(
-                phone,
-                context,
-                message
-            );
+        // Palabra de escape: sin importar en qué paso esté atascada la
+        // conversación, el cliente siempre puede reiniciarla. Sin esto,
+        // una vez el bot entra a un flujo (ej. "elegir servicio"), no hay
+        // forma de salir aunque el cliente salude o pregunte otra cosa.
+        const textoNormalizado = (message || "").trim().toLowerCase();
+        const esReinicio = [
+            "cancelar",
+            "cancela",
+            "reiniciar",
+            "salir",
+            "menu",
+            "menú",
+            "empezar de nuevo",
+        ].includes(textoNormalizado);
 
-        if (bookingResponse) {
-            return bookingResponse;
+        if (esReinicio) {
+            conversationManager.clear(phone);
+            return this.getMenu();
         }
 
         const activeConversation = await this.continueConversation(

@@ -5,10 +5,10 @@ class WhatsAppService {
 
     async sendTextMessage(to, message) {
 
-        try {
+        const url =
+            `https://graph.facebook.com/${metaConfig.graphApiVersion}/${metaConfig.phoneNumberId}/messages`;
 
-            const url =
-                `https://graph.facebook.com/${metaConfig.graphApiVersion}/${metaConfig.phoneNumberId}/messages`;
+        try {
 
             const body = {
 
@@ -56,12 +56,15 @@ class WhatsAppService {
 
         } catch (error) {
 
-            console.log("========== ENVÍO A META ==========");
+            console.log("========== ERROR ENVIANDO A META ==========");
             console.log("URL:", url);
             console.log("Destino:", to);
-            console.log("Token:", metaConfig.accessToken?.substring(0, 20) + "...");
             console.log("Phone Number ID:", metaConfig.phoneNumberId);
-            console.log("==================================");
+            console.log("Mensaje de error:", error.message);
+            console.log("Respuesta de Meta:", JSON.stringify(error.response?.data, null, 2));
+            console.log("============================================");
+
+            return null;
 
         }
     }
