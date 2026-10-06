@@ -83,6 +83,33 @@ router.post('/login', async (req, res) => {
 
 // Rutas públicas
 router.get('/', obtenerBarberos)
+
+// Días de descanso — antes de /:id para que no choque con el genérico
+router.get('/:id/dias-descanso', async (req, res, next) => {
+  try {
+    res.json(await require('../services/barberos.service').listarDiasDescanso(req.params.id))
+  } catch (err) { next(err) }
+})
+router.post('/:id/dias-descanso', verificarToken, soloAdmin, async (req, res, next) => {
+  try {
+    res.status(201).json(await require('../services/barberos.service').crearDiaDescanso(req.params.id, req.body))
+  } catch (err) { next(err) }
+})
+router.delete('/dias-descanso/:id', verificarToken, soloAdmin, async (req, res, next) => {
+  try {
+    await require('../services/barberos.service').eliminarDiaDescanso(req.params.id)
+    res.json({ mensaje: 'Día de descanso eliminado' })
+  } catch (err) { next(err) }
+})
+
+// Reordenar — también antes de /:id
+router.put('/reordenar', verificarToken, soloAdmin, async (req, res, next) => {
+  try {
+    await require('../services/barberos.service').reordenar(req.body.orden)
+    res.json({ mensaje: 'Orden actualizado' })
+  } catch (err) { next(err) }
+})
+
 router.get('/:id', obtenerBarbero)
 
 // Rutas solo admin

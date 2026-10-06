@@ -43,6 +43,14 @@ router.get('/', obtenerServicios)
  */
 router.get('/:id', obtenerServicio)
 
+// Reordenar — antes de /:id PUT para que no choque con el genérico
+router.put('/reordenar', verificarToken, soloAdmin, async (req, res, next) => {
+  try {
+    await require('../services/servicios.service').reordenar(req.body.orden)
+    res.json({ mensaje: 'Orden actualizado' })
+  } catch (err) { next(err) }
+})
+
 /**
  * @swagger
  * /api/servicios:

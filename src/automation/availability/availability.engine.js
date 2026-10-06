@@ -1,5 +1,6 @@
 const appointmentsRepository = require("../repositories/appointments.repository");
 const timeHelper = require("../helpers/time.helper");
+const prisma = require("../../prisma");
 
 class AvailabilityEngine {
 
@@ -73,6 +74,19 @@ class AvailabilityEngine {
         fecha,
         duracion
     ) {
+        // Si el barbero tiene marcado ese día como descanso
+        // (vacaciones, incapacidad, etc.), no hay ningún horario
+        // disponible — ni para la web ni para el bot de WhatsApp,
+        // ya que ambos pasan por este mismo motor.
+        const { inicio, fin } = appointmentsRepository.getRangoDelDia(fecha);
+        const descanso = await prisma.diaDescanso.findFirst({
+            where: { barberoId, fecha: { gte: inicio, lt: fin } },
+        });
+        if (descanso) {
+            console.log("Barbero de descanso ese día, sin horarios disponibles");
+            return [];
+        }
+
         const appointments =
             await appointmentsRepository.getAppointments(
                 barberoId,
@@ -123,25 +137,6 @@ class AvailabilityEngine {
 
             if (
                 current > minutosAhora &&
-                this.isSlotAvailable(
-                    current,
-                    duracion,
-                    occupiedIntervals
-                )
-            ) {
-                slots.push(
-                    timeHelper.toTime(current)
-                );
-            }
-
-            current += duracion;
-        }
-
-        
-
-        while (current + duracion <= end) {
-
-            if (
                 this.isSlotAvailable(
                     current,
                     duracion,
