@@ -39,6 +39,11 @@ export default function RecepcionPanel() {
     return guardado ? JSON.parse(guardado) : null;
   });
   const [tab, setTab] = useState('agenda');
+
+  useEffect(() => {
+    document.querySelector('.rp-content')?.scrollTo(0, 0);
+    window.scrollTo(0, 0);
+  }, [tab]);
   const [agenda, setAgenda] = useState([]);
   const [pendientes, setPendientes] = useState([]);
   const [caja, setCaja] = useState(null);
@@ -251,16 +256,17 @@ export default function RecepcionPanel() {
       localStorage.setItem('recepcion_usuario', JSON.stringify(data.usuario));
       setToken(data.token);
       setUsuario(data.usuario);
+      mostrarToast(`Bienvenido, ${data.usuario.nombre.split(' ')[0]}`);
     } catch (e) {
       mostrarToast(e.message, 'error');
     }
   };
 
   const salir = () => {
+    mostrarToast('Sesión cerrada');
     localStorage.removeItem('recepcion_token');
     localStorage.removeItem('recepcion_usuario');
-    setToken(null);
-    setUsuario(null);
+    setTimeout(() => { setToken(null); setUsuario(null); }, 600);
   };
 
   if (!token) {
@@ -269,11 +275,6 @@ export default function RecepcionPanel() {
 
   const cobrando = pendientes.find(v => v.id === cobrandoId);
   const totalExtras = extras.reduce((sum, e) => sum + (Number(e.precio) || 0), 0);
-
-  const agendaPorBarbero = barberos
-    .map(b => ({ barbero: b, citas: agenda.filter(c => c.barberoId === b.id) }))
-    .filter(g => g.citas.length > 0);
-  const sinBarberoAsignado = agenda.filter(c => !barberos.find(b => b.id === c.barberoId));
 
   return (
     <div className="rp-layout">
@@ -334,53 +335,36 @@ export default function RecepcionPanel() {
             </div>
             {agenda.length === 0 && !loading && <p className="rp-empty">No hay citas agendadas para este día.</p>}
 
-            {agendaPorBarbero.map(({ barbero, citas }) => (
-              <div key={barbero.id} className="rp-barbero-block">
-                <div className="rp-barbero-header">
-                  <span className="rp-barbero-avatar">{barbero.nombre.charAt(0)}</span>
-                  <div>
-                    <div className="rp-barbero-nombre">{barbero.nombre}</div>
-                    <div className="rp-barbero-especialidad">{barbero.especialidad}</div>
-                  </div>
-                  <span className="rp-barbero-count">{citas.length} cita{citas.length !== 1 ? 's' : ''}</span>
-                </div>
+            {agenda.length > 0 && (
+              <div className="rp-barbero-block">
                 <table className="rp-tabla">
                   <thead>
                     <tr>
-                      <th>Hora</th><th>Cliente</th><th>Servicios</th><th>Estado</th><th>Acción</th>
+                      <th>Hora</th><th>Barbero</th><th>Cliente</th><th>Servicios</th><th>Estado</th><th>Acción</th>
                     </tr>
                   </thead>
                   <tbody>
-                    {citas.sort((a, b) => a.hora.localeCompare(b.hora)).map(c => (
-                      <tr key={c.id}>
-                        <td>{c.hora}</td>
-                        <td>{c.usuario?.nombre}{c.usuario?.telefono && <div className="rp-td-sub">📞 {c.usuario.telefono}</div>}</td>
-                        <td className="rp-td-servicios">{c.servicios.map(cs => cs.servicio.nombre).join(', ')}</td>
-                        <td><span className={`rp-estado rp-estado-${c.estado.toLowerCase()}`}>{c.estado}</span></td>
-                        <td>
-                          {c.estado === 'PENDIENTE' && (
-                            <button className="rp-btn-mini" disabled={cambiandoEstadoId === c.id} onClick={() => cambiarEstadoCita(c.id, 'CONFIRMADA')}>Confirmar</button>
-                          )}
-                          {c.estado === 'CONFIRMADA' && (
-                            <button className="rp-btn-mini rp-btn-mini-ok" disabled={cambiandoEstadoId === c.id} onClick={() => cambiarEstadoCita(c.id, 'COMPLETADA')}>Finalizar</button>
-                          )}
-                          {(c.estado === 'COMPLETADA' || c.estado === 'CANCELADA') && <span className="rp-td-sub">—</span>}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            ))}
-
-            {sinBarberoAsignado.length > 0 && (
-              <div className="rp-barbero-block">
-                <div className="rp-barbero-header"><div className="rp-barbero-nombre">Sin barbero asignado</div></div>
-                <table className="rp-tabla">
-                  <tbody>
-                    {sinBarberoAsignado.map(c => (
-                      <tr key={c.id}><td>{c.hora}</td><td>{c.usuario?.nombre}</td><td><span className={`rp-estado rp-estado-${c.estado.toLowerCase()}`}>{c.estado}</span></td></tr>
-                    ))}
+                    {[...agenda].sort((a, b) => a.hora.localeCompare(b.hora)).map(c => {
+                      const barbero = barberos.find(b => b.id === c.barberoId);
+                      return (
+                        <tr key={c.id}>
+                          <td className="rp-td-hora">{c.hora}</td>
+                          <td>{barbero?.nombre || "Sin asignar"}</td>
+                          <td>{c.usuario?.nombre}{c.usuario?.telefono && <div className="rp-td-sub">📞 {c.usuario.telefono}</div>}</td>
+                          <td className="rp-td-servicios">{c.servicios.map(cs => cs.servicio.nombre).join(', ')}</td>
+                          <td><span className={`rp-estado rp-estado-${c.estado.toLowerCase()}`}>{c.estado}</span></td>
+                          <td>
+                            {c.estado === 'PENDIENTE' && (
+                              <button className="rp-btn-mini" disabled={cambiandoEstadoId === c.id} onClick={() => cambiarEstadoCita(c.id, 'CONFIRMADA')}>Confirmar</button>
+                            )}
+                            {c.estado === 'CONFIRMADA' && (
+                              <button className="rp-btn-mini rp-btn-mini-ok" disabled={cambiandoEstadoId === c.id} onClick={() => cambiarEstadoCita(c.id, 'COMPLETADA')}>Finalizar</button>
+                            )}
+                            {(c.estado === 'COMPLETADA' || c.estado === 'CANCELADA') && <span className="rp-td-sub">—</span>}
+                          </td>
+                        </tr>
+                      );
+                    })}
                   </tbody>
                 </table>
               </div>
@@ -554,22 +538,46 @@ export default function RecepcionPanel() {
 function LoginRecepcion({ onLogin }) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [loading, setLoading] = useState(false);
+
+  const submit = async (e) => {
+    e.preventDefault();
+    setLoading(true);
+    try {
+      await onLogin(email, password);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <div className="rp-login-page">
       <style>{estilos}</style>
-      <form className="rp-login-card" onSubmit={e => { e.preventDefault(); onLogin(email, password); }}>
-        <div className="rp-login-icon"><IconTijeras /></div>
-        <h2>LA <span>FAMA</span> · RECEPCIÓN</h2>
-        <input type="email" placeholder="Email" value={email} onChange={e => setEmail(e.target.value)} required />
-        <input type="password" placeholder="Contraseña" value={password} onChange={e => setPassword(e.target.value)} required />
-        <button type="submit" className="rp-btn-cobrar">Entrar</button>
-      </form>
+      <div className="rp-login-bg" />
+      <div className="rp-login-box">
+        <div className="rp-login-logo">LA <span>FAMA</span> BARBER</div>
+        <div className="rp-login-tag">Panel Recepción</div>
+        <div className="rp-login-title">Acceso Recepción</div>
+        <p className="rp-login-sub">Ingresa tus credenciales para continuar</p>
+        <form onSubmit={submit}>
+          <label className="rp-field-label">Email</label>
+          <input className="rp-login-input" type="email" placeholder="recepcion@lafama.com" value={email} onChange={e => setEmail(e.target.value)} required />
+          <label className="rp-field-label">Contraseña</label>
+          <input className="rp-login-input" type="password" placeholder="••••••••" value={password} onChange={e => setPassword(e.target.value)} required />
+          <button type="submit" className="rp-btn-cobrar" style={{ width: "100%", padding: 14, marginTop: 24, fontSize: 13 }} disabled={loading}>
+            {loading ? "Verificando..." : "Ingresar al Panel"}
+          </button>
+        </form>
+        <button className="rp-login-back" onClick={() => window.location.href = "/"}>
+          ← Volver a la página principal
+        </button>
+      </div>
     </div>
   );
 }
 
 const estilos = `
-  :root { --rojo: #c0392b; --negro: #0d0d0d; --negro2: #161616; --negro3: #1e1e1e; --blanco: #f5f5f5; }
+  :root { --rojo: #c0392b; --negro: #0d0d0d; --negro2: #161616; --negro3: #1e1e1e; --blanco: #f5f5f5; --gris: #666; }
   .rp-layout { min-height: 100vh; background: var(--negro); color: var(--blanco); font-family: 'Oswald', sans-serif; }
 
   .rp-topbar { display: flex; justify-content: space-between; align-items: center; padding: 0 28px; height: 68px;
@@ -615,6 +623,7 @@ const estilos = `
   .rp-tabla td { padding: 12px 18px; border-bottom: 1px solid rgba(255,255,255,0.04); vertical-align: top; }
   .rp-tabla tr:last-child td { border-bottom: none; }
   .rp-td-sub { font-size: 11px; color: rgba(255,255,255,0.45); margin-top: 2px; }
+  .rp-td-hora { font-family: 'Bebas Neue', sans-serif; font-size: 16px; letter-spacing: 1px; white-space: nowrap; }
   .rp-td-servicios { color: rgba(255,255,255,0.75); max-width: 220px; }
   .rp-btn-mini { background: none; border: 1px solid rgba(52,152,219,0.5); color: #3498db; padding: 6px 12px; font-size: 10px; letter-spacing: 0.5px; cursor: pointer; }
   .rp-btn-mini-ok { border-color: rgba(39,174,96,0.5); color: #27ae60; }
@@ -661,12 +670,21 @@ const estilos = `
   .rp-modal-actions { display: flex; gap: 10px; justify-content: flex-end; }
   .rp-toast { position: fixed; bottom: 20px; right: 20px; background: var(--negro2); border-left: 4px solid var(--rojo); padding: 14px 20px; font-size: 13px; z-index: 300; }
   .rp-toast.error { border-left-color: #e74c3c; }
-  .rp-login-page { min-height: 100vh; display: flex; align-items: center; justify-content: center; background: radial-gradient(circle at 30% 20%, #200a08 0%, var(--negro) 70%); }
-  .rp-login-card { background: var(--negro2); padding: 40px; width: 320px; display: flex; flex-direction: column; gap: 14px; border-top: 3px solid var(--rojo); }
-  .rp-login-icon { color: var(--rojo); display: flex; justify-content: center; margin-bottom: 4px; }
-  .rp-login-card h2 { font-family: 'Bebas Neue', sans-serif; text-align: center; letter-spacing: 2px; margin-bottom: 10px; }
-  .rp-login-card h2 span { color: var(--rojo); }
-  .rp-login-card input { background: var(--negro); border: 1px solid rgba(255,255,255,0.1); color: var(--blanco); padding: 12px; font-size: 13px; }
+  .rp-login-page { min-height: 100vh; display: flex; align-items: center; justify-content: center; background: var(--negro); position: relative; }
+  .rp-login-bg { position: absolute; inset: 0; background: radial-gradient(ellipse 60% 60% at 50% 50%, rgba(192,57,43,0.08) 0%, transparent 70%); }
+  .rp-login-box { background: var(--negro2); border: 1px solid rgba(192,57,43,0.2); padding: 52px 48px; width: 90%; max-width: 420px; position: relative; z-index: 2; }
+  .rp-login-logo { font-family: 'Bebas Neue', sans-serif; font-size: 32px; letter-spacing: 3px; margin-bottom: 4px; }
+  .rp-login-logo span { color: var(--rojo); }
+  .rp-login-tag { font-family: 'Oswald', sans-serif; font-size: 10px; letter-spacing: 4px; text-transform: uppercase; color: var(--rojo); margin-bottom: 32px; }
+  .rp-login-title { font-family: 'Bebas Neue', sans-serif; font-size: 28px; letter-spacing: 2px; margin-bottom: 6px; }
+  .rp-login-sub { color: var(--gris); font-size: 13px; margin-bottom: 28px; font-weight: 300; }
+  .rp-field-label { font-family: 'Oswald', sans-serif; font-size: 10px; letter-spacing: 3px; text-transform: uppercase; color: var(--rojo); margin-bottom: 8px; display: block; margin-top: 16px; }
+  .rp-field-label:first-of-type { margin-top: 0; }
+  .rp-login-input { width: 100%; background: var(--negro); border: 1px solid rgba(255,255,255,0.08); color: var(--blanco); padding: 12px 14px; font-family: 'Oswald', sans-serif; font-size: 14px; outline: none; transition: border-color 0.2s; margin-bottom: 4px; }
+  .rp-login-input:focus { border-color: var(--rojo); }
+  .rp-login-input::placeholder { color: rgba(255,255,255,0.2); }
+  .rp-login-back { display: block; width: 100%; text-align: center; margin-top: 16px; font-size: 11px; letter-spacing: 3px; text-transform: uppercase; color: var(--gris); background: none; border: none; cursor: pointer; font-family: 'Oswald', sans-serif; padding: 8px 0; }
+  .rp-login-back:hover { color: var(--blanco); }
 
   @media (max-width: 900px) {
     .rp-stats { grid-template-columns: 1fr 1fr; }
