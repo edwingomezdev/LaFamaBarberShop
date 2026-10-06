@@ -1,8 +1,13 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 
-const API = "http://localhost:3000/api";
+const API = import.meta.env.VITE_API_URL || "http://localhost:3000/api";
 const getToken = () => localStorage.getItem("barber_token");
+
+const getImageUrl = (img) => {
+  if (!img) return "";
+  return img.startsWith("/") ? API.replace('/api', '') + img : img;
+};
 
 
 
@@ -214,6 +219,7 @@ export default function BarberView() {
   const [zoomItem, setZoomItem] = useState(null);
   const [loading, setLoading] = useState(false);
   const [toasts, setToasts] = useState([]);
+  const [sessionToast, setSessionToast] = useState(null);
   const [nuevasCitas, setNuevasCitas] = useState(new Set());
   const [notifPermission, setNotifPermission] = useState(Notification.permission);
   const [clock, setClock] = useState(new Date());
@@ -339,21 +345,24 @@ export default function BarberView() {
   }
 };
   const logout = () => {
+  setSessionToast({ msg: 'Sesión cerrada', icon: '👋' });
   localStorage.removeItem("barber_token");
   localStorage.removeItem("barbero");
-  setBarbero(null); setCitas([]);
+  setTimeout(() => { setBarbero(null); setCitas([]); }, 700);
   clearInterval(intervalRef.current);
   clearInterval(progressRef.current);
 };
 if (!barbero) {
     return (
       <>
-      
+        {sessionToast && (
+          <div className="session-toast">{sessionToast.icon} {sessionToast.msg}</div>
+        )}
         <LoginScreen onLogin={(b, token) => {
           localStorage.setItem("barber_token", token);
           localStorage.setItem("barbero", JSON.stringify(b));
-          setBarbero(b);
-          setTimeout(() => window.location.reload(), 100);
+          setSessionToast({ msg: `Bienvenido, ${b.nombre.split(' ')[0]}`, icon: '✂️' });
+          setTimeout(() => { setBarbero(b); window.location.reload(); }, 600);
         }} />
       </>
     );
@@ -472,62 +481,62 @@ if (!barbero) {
 
               {loading ? (
                 <div className="loading"><div className="spinner" />Cargando citas...</div>
+              ) : citasActivas.length === 0 ? (
+                <div className="empty-state">
+                  <div className="empty-icon">✂️</div>
+                  <div className="empty-title">Sin citas por ahora</div>
+                  <p className="empty-sub">Las citas aparecerán aquí automáticamente cuando sean agendadas</p>
+                </div>
               ) : (
-                <div className="citas-list">
-                  {citasActivas.length === 0 ? (
-                    <div className="empty-state">
-                      <div className="empty-icon">✂️</div>
-                      <div className="empty-title">Sin citas por ahora</div>
-                      <p className="empty-sub">Las citas aparecerán aquí automáticamente cuando sean agendadas</p>
-                    </div>
-                  ) : (
-                    citasActivas.map(c => {
-                      const total = c.servicios?.reduce((s, x) => s + (x.servicio?.precio || 0), 0);
-                      const esNueva = nuevasCitas.has(c.id);
-                      return (
-                        <div key={c.id} className={`cita-card ${esNueva ? "nueva" : ""}`}>
-                          <div className="cita-card-top">
-                            <div className="cita-hora">{c.hora}</div>
-                            <div className="cita-estado-wrap">
-                              {esNueva && <span className="badge-nueva">● Nueva</span>}
-                              <span className={`badge badge-${c.estado}`}>{c.estado}</span>
-                            </div>
-                          </div>
-                          <div className="cita-card-body">
-                            <div className="cita-cliente">{c.usuario?.nombre}</div>
-                            <div className="cita-servicios">
-                              {c.servicios?.map(s => (
-                                <span key={s.servicio?.id} className="servicio-tag">{s.servicio?.nombre}</span>
-                              ))}
-                            </div>
-                            {c.usuario?.telefono && (
-                              <div className="cita-info">📞 <strong>{c.usuario.telefono}</strong></div>
-                            )}
-                            {c.nota && (
-                              <div className="cita-info">📝 {c.nota}</div>
-                            )}
-                            <div className="cita-total">${total?.toLocaleString("es-CO")}</div>
-                          </div>
-                          {(c.estado === "PENDIENTE" || c.estado === "CONFIRMADA") && (
-                            <div className="cita-card-footer">
+                <div className="citas-tabla-wrap">
+                  <table className="citas-tabla">
+                    <thead>
+                      <tr>
+                        <th>Hora</th>
+                        <th>Cliente</th>
+                        <th>Servicios</th>
+                        <th>Contacto</th>
+                        <th>Total</th>
+                        <th>Estado</th>
+                        <th>Acción</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {citasActivas.map(c => {
+                        const total = c.servicios?.reduce((s, x) => s + (x.servicio?.precio || 0), 0);
+                        const esNueva = nuevasCitas.has(c.id);
+                        return (
+                          <tr key={c.id} className={esNueva ? "fila-nueva" : ""}>
+                            <td className="td-hora">{c.hora}</td>
+                            <td>
+                              {c.usuario?.nombre}
+                              {esNueva && <span className="badge-nueva" style={{ marginLeft: 8 }}>● Nueva</span>}
+                              {c.nota && <div className="td-sub">📝 {c.nota}</div>}
+                            </td>
+                            <td>
+                              <div className="td-servicios-tags">
+                                {c.servicios?.map(s => (
+                                  <span key={s.servicio?.id} className="servicio-tag">{s.servicio?.nombre}</span>
+                                ))}
+                              </div>
+                            </td>
+                            <td>{c.usuario?.telefono ? <>📞 {c.usuario.telefono}</> : "—"}</td>
+                            <td className="td-total">${total?.toLocaleString("es-CO")}</td>
+                            <td><span className={`badge badge-${c.estado}`}>{c.estado}</span></td>
+                            <td>
                               {c.estado === "PENDIENTE" && (
-                                <button className="btn-action btn-completar"
-                                  onClick={() => cambiarEstado(c.id, "CONFIRMADA")}>
-                                  Confirmar
-                                </button>
+                                <button className="btn-action btn-completar" onClick={() => cambiarEstado(c.id, "CONFIRMADA")}>Confirmar</button>
                               )}
                               {c.estado === "CONFIRMADA" && (
-                                <button className="btn-action btn-completar"
-                                  onClick={() => cambiarEstado(c.id, "COMPLETADA")}>
-                                  ✓ Marcar completada
-                                </button>
+                                <button className="btn-action btn-completar" onClick={() => cambiarEstado(c.id, "COMPLETADA")}>✓ Completar</button>
                               )}
-                            </div>
-                          )}
-                        </div>
-                      );
-                    })
-                  )}
+                              {c.estado === "COMPLETADA" && <span className="td-sub">—</span>}
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
                 </div>
               )}
             </>
@@ -548,13 +557,13 @@ if (!barbero) {
                       <div
                         className="corte-imagen"
                         onClick={() => corte.imagen && setZoomItem({
-                          img: corte.imagen.startsWith('/') ? 'http://localhost:3000' + corte.imagen : corte.imagen,
+                          img: getImageUrl(corte.imagen),
                           title: corte.nombre,
                           sub: 'Catalogo de cortes',
                           desc: corte.descripcion,
                         })}
                         style={corte.imagen ? {
-                          backgroundImage: `url(${corte.imagen.startsWith('/') ? 'http://localhost:3000' + corte.imagen : corte.imagen})`
+                          backgroundImage: `url(${getImageUrl(corte.imagen)})`
                         } : {}}
                       >
                         {!corte.imagen && '✂️'}
@@ -602,13 +611,13 @@ if (!barbero) {
                       <div
                         className="corte-imagen"
                         onClick={() => estilo.imagen && setZoomItem({
-                          img: estilo.imagen.startsWith('/') ? 'http://localhost:3000' + estilo.imagen : estilo.imagen,
+                          img: getImageUrl(estilo.imagen),
                           title: estilo.nombre,
                           sub: estilo.categoria || 'Estilo de corte',
                           desc: estilo.descripcion,
                         })}
                         style={estilo.imagen ? {
-                          backgroundImage: `url(${estilo.imagen.startsWith('/') ? 'http://localhost:3000' + estilo.imagen : estilo.imagen})`
+                          backgroundImage: `url(${getImageUrl(estilo.imagen)})`
                         } : {}}
                       >
                         {!estilo.imagen && 'ESTILO'}

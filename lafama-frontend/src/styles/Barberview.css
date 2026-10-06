@@ -2,6 +2,67 @@
 
   * { margin: 0; padding: 0; box-sizing: border-box; }
 
+  .session-toast {
+    position: fixed;
+    top: 24px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 999;
+    background: var(--negro2);
+    border: 1px solid rgba(192,57,43,0.4);
+    color: var(--blanco);
+    padding: 14px 28px;
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: 14px;
+    letter-spacing: 1px;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.5);
+    animation: sessionToastIn 0.3s ease, sessionToastOut 0.3s ease 2.2s forwards;
+  }
+
+  @keyframes sessionToastIn {
+    from { opacity: 0; transform: translate(-50%, -10px); }
+    to { opacity: 1; transform: translate(-50%, 0); }
+  }
+  @keyframes sessionToastOut {
+    to { opacity: 0; transform: translate(-50%, -10px); }
+  }
+
+  /* ── Tabla de citas (reemplaza las tarjetas individuales) ── */
+  .citas-tabla-wrap {
+    background: var(--negro2);
+    border: 1px solid rgba(255,255,255,0.06);
+    overflow-x: auto;
+  }
+  .citas-tabla { width: 100%; border-collapse: collapse; font-family: 'Barlow', sans-serif; }
+  .citas-tabla thead th {
+    text-align: left;
+    padding: 14px 18px;
+    font-size: 10px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--rojo);
+    background: var(--negro3);
+    border-bottom: 1px solid rgba(192,57,43,0.2);
+    white-space: nowrap;
+  }
+  .citas-tabla tbody td {
+    padding: 14px 18px;
+    font-size: 13px;
+    border-bottom: 1px solid rgba(255,255,255,0.04);
+    vertical-align: middle;
+  }
+  .citas-tabla tbody tr:last-child td { border-bottom: none; }
+  .citas-tabla tbody tr:hover { background: rgba(255,255,255,0.02); }
+  .citas-tabla tbody tr.fila-nueva { background: rgba(192,57,43,0.06); animation: filaNuevaPulse 2s ease infinite; }
+  @keyframes filaNuevaPulse {
+    0%, 100% { background: rgba(192,57,43,0.06); }
+    50% { background: rgba(192,57,43,0.14); }
+  }
+  .td-hora { font-family: 'Bebas Neue', sans-serif; font-size: 18px; letter-spacing: 1px; color: var(--blanco); white-space: nowrap; }
+  .td-sub { font-size: 11px; color: var(--gris); margin-top: 4px; }
+  .td-total { font-family: 'Bebas Neue', sans-serif; font-size: 16px; color: var(--verde-claro); white-space: nowrap; }
+  .td-servicios-tags { display: flex; flex-wrap: wrap; gap: 6px; max-width: 240px; }
+
   :root {
     --rojo: #c0392b;
     --rojo-vivo: #e74c3c;
@@ -859,4 +920,9 @@
     .zoom-info { border-left: 0; border-top: 1px solid rgba(255,255,255,0.06); }
     .topbar-clock { font-size: 22px; }
     .tabs-nav { padding: 0 16px; }
+    .citas-tabla thead { display: none; }
+    .citas-tabla, .citas-tabla tbody, .citas-tabla tr, .citas-tabla td { display: block; width: 100%; }
+    .citas-tabla tbody tr { padding: 14px 16px; border-bottom: 1px solid rgba(255,255,255,0.06); }
+    .citas-tabla tbody td { padding: 4px 0; border-bottom: none; }
+    .citas-tabla tbody td:empty { display: none; }
   }
