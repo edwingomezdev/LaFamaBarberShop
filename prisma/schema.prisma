@@ -29,8 +29,10 @@ model Barbero {
   createdAt    DateTime @default(now())
   pin          String?
   descripcion  String?
+  orden        Int      @default(0)
   citas        Cita[]
   ventas       Venta[]
+  diasDescanso DiaDescanso[]
 }
 
 model Servicio {
@@ -41,6 +43,7 @@ model Servicio {
   duracion    Int
   activo      Boolean              @default(true)
   imagen      String?
+  orden       Int                  @default(0)
   citas       CitaServicio[]
   componentes ServicioComponente[]
 }
@@ -237,4 +240,28 @@ enum EstadoMembresia {
   CANCELADA
   VENCIDA
   AGOTADA
+}
+
+/// Día específico en que un barbero no atiende (vacaciones, incapacidad,
+/// descanso puntual). Mientras exista un registro para esa fecha, el
+/// motor de disponibilidad no ofrece ningún horario para ese barbero
+/// ese día, y agendar directamente queda bloqueado.
+model DiaDescanso {
+  id        Int      @id @default(autoincrement())
+  barberoId Int
+  barbero   Barbero  @relation(fields: [barberoId], references: [id])
+  fecha     DateTime
+  motivo    String?
+  createdAt DateTime @default(now())
+
+  @@unique([barberoId, fecha])
+}
+
+/// Fila única (id fijo 1) con interruptores globales del sitio público.
+/// Le permite al admin mostrar u ocultar secciones enteras (Productos,
+/// Membresías) sin borrar los datos ni tocar código.
+model Configuracion {
+  id                Int     @id @default(1)
+  mostrarProductos  Boolean @default(true)
+  mostrarMembresias Boolean @default(true)
 }
