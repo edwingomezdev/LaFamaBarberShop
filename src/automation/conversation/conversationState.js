@@ -6,6 +6,7 @@ const createInitialState = () => ({
   barber: null,
   date: null,
   time: null,
+  availableSlots: null,
   customerName: null,
 });
 

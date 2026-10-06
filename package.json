@@ -4,7 +4,9 @@
   "main": "src/index.js",
   "scripts": {
     "dev": "nodemon src/index.js",
-    "start": "node src/index.js"
+    "start": "npx prisma migrate deploy && node src/index.js",
+    "build": "cd lafama-frontend && npm install && npm run build",
+    "postinstall": "npx prisma generate"
   },
   "keywords": [],
   "author": "Edwin Gomez",

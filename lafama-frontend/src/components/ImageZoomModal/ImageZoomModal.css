@@ -1,0 +1,105 @@
+.img-zoom-trigger {
+  border: 0;
+  background: transparent;
+  padding: 0;
+  cursor: zoom-in;
+  font: inherit;
+}
+
+.zoom-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 400;
+  background: rgba(0,0,0,0.92);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 28px;
+}
+
+.zoom-viewer {
+  width: min(1100px, 96vw);
+  height: min(760px, 88vh);
+  background: #070707;
+  border: 1px solid rgba(255,255,255,0.12);
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 300px;
+  overflow: hidden;
+}
+
+.zoom-image-area {
+  position: relative;
+  overflow: hidden;
+  cursor: zoom-in;
+  background: #050505;
+}
+
+.zoom-image-area img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  transform-origin: var(--zoom-x, 50%) var(--zoom-y, 50%);
+  transform: scale(var(--zoom-scale, 1));
+  transition: transform 0.12s ease;
+  display: block;
+}
+
+.zoom-info {
+  border-left: 1px solid rgba(255,255,255,0.08);
+  padding: 28px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  background: var(--negro2);
+}
+
+.zoom-title {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 34px;
+  letter-spacing: 2px;
+  line-height: 1;
+  color: var(--blanco);
+}
+
+.zoom-sub {
+  font-family: 'Oswald', sans-serif;
+  font-size: 11px;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  color: var(--rojo);
+}
+
+.zoom-desc {
+  font-size: 13px;
+  color: var(--gris);
+  line-height: 1.7;
+  font-family: 'Crimson Pro', serif;
+  font-style: italic;
+}
+
+.zoom-price {
+  margin-top: auto;
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 34px;
+  color: var(--rojo);
+}
+
+.zoom-close {
+  position: absolute;
+  top: 18px;
+  right: 18px;
+  width: 38px;
+  height: 38px;
+  border: 1px solid rgba(255,255,255,0.18);
+  background: rgba(0,0,0,0.5);
+  color: var(--blanco);
+  cursor: pointer;
+  font-size: 18px;
+  z-index: 2;
+}
+
+@media (max-width: 768px) {
+  .zoom-viewer { grid-template-columns: 1fr; height: 88vh; }
+  .zoom-info { border-left: 0; border-top: 1px solid rgba(255,255,255,0.08); padding: 18px; }
+  .zoom-image-area { min-height: 0; }
+}
