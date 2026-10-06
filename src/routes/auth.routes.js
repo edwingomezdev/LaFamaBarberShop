@@ -127,3 +127,54 @@ router.get('/personal', verificarToken, soloAdmin, async (req, res) => {
     res.status(500).json({ error: 'Error interno' })
   }
 })
+
+// Editar una cuenta de personal existente (nombre/email/teléfono/rol,
+// y opcionalmente la contraseña si se quiere resetear).
+router.put('/personal/:id', verificarToken, soloAdmin, async (req, res) => {
+  try {
+    const { nombre, email, telefono, rol, password } = req.body
+
+    if (rol && !['RECEPCION', 'PRODUCTOS'].includes(rol)) {
+      return res.status(400).json({ error: "El rol debe ser 'RECEPCION' o 'PRODUCTOS'" })
+    }
+
+    const data = { nombre, email, telefono, rol }
+
+    if (password) {
+      if (password.length < 6) {
+        return res.status(400).json({ error: 'La contraseña debe tener al menos 6 caracteres' })
+      }
+      const bcrypt = require('bcryptjs')
+      data.password = await bcrypt.hash(password, 10)
+    }
+
+    const actualizado = await prisma.usuario.update({
+      where: { id: Number(req.params.id) },
+      data,
+      select: { id: true, nombre: true, email: true, telefono: true, rol: true, createdAt: true },
+    })
+    res.json(actualizado)
+  } catch (e) {
+    if (e.code === 'P2002') {
+      return res.status(400).json({ error: 'Ese email ya está en uso' })
+    }
+    console.error(e)
+    res.status(500).json({ error: 'Error interno' })
+  }
+})
+
+// Eliminar una cuenta de personal. Si tiene ventas cobradas asociadas,
+// Prisma bloquea el borrado por integridad referencial — en ese caso
+// avisamos en vez de dejar caer un error genérico.
+router.delete('/personal/:id', verificarToken, soloAdmin, async (req, res) => {
+  try {
+    await prisma.usuario.delete({ where: { id: Number(req.params.id) } })
+    res.json({ mensaje: 'Cuenta eliminada' })
+  } catch (e) {
+    if (e.code === 'P2003') {
+      return res.status(400).json({ error: 'Esta cuenta ya registró ventas/cobros y no se puede eliminar. Puedes editarla para desactivarla en su lugar.' })
+    }
+    console.error(e)
+    res.status(500).json({ error: 'Error interno' })
+  }
+})
