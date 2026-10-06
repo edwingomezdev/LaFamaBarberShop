@@ -5,6 +5,7 @@ const env = require('./config/env')
 const express = require('express')
 const cors = require('cors')
 const path = require('path')
+const fs = require('fs')
 const swaggerUi = require('swagger-ui-express')
 const session = require('express-session')
 
@@ -30,6 +31,7 @@ const automationRoutes = require('./routes/automation.routes')
 const whatsappRoutes = require("./whatsapp/routes/whatsapp.routes");
 const availabilityRoutes = require('./routes/availability.routes')
 const ventasRoutes = require('./routes/ventas.routes')
+const configuracionRoutes = require('./routes/configuracion.routes')
 
 
 
@@ -71,12 +73,13 @@ app.use('/api/usuarios',   usuariosRoutes)
 app.use('/api/estilos-cortes', estilosCorteRoutes)
 app.use('/api/automation', automationRoutes)
 app.use("/api/whatsapp", whatsappRoutes);
-app.use('/api/citas', citasRoutes)
 app.use('/api/availability', availabilityRoutes)
 app.use('/api/ventas', ventasRoutes)
+app.use('/api/configuracion', configuracionRoutes)
 
-// ── Health check ──────────────────────────────────────────────────────────────
-app.get('/', (req, res) => {
+// ── Health check (para monitoreo de Railway/Render) ────────────────────────
+// Antes vivía en '/', pero esa ruta ahora debe mostrar el sitio (React).
+app.get('/health', (req, res) => {
   res.json({
     app: 'La Fama Barber Shop API',
     version: '1.0.0',
@@ -84,6 +87,35 @@ app.get('/', (req, res) => {
     docs: `http://localhost:${env.PORT}/api-docs`,
   })
 })
+
+// ── Frontend (build de Vite) servido desde este mismo servidor ──────────────
+// Solo se activa si existe el build (`npm run build` en lafama-frontend).
+// En desarrollo local, si corres el frontend aparte con `npm run dev`,
+// esta carpeta no existe y el backend simplemente no la sirve — nada se rompe.
+const frontendDist = path.join(__dirname, '..', 'lafama-frontend', 'dist')
+const frontendExiste = fs.existsSync(path.join(frontendDist, 'index.html'))
+
+if (frontendExiste) {
+  app.use(express.static(frontendDist))
+
+  // Cualquier ruta que no sea /api, /uploads o /api-docs devuelve el
+  // index.html del sitio, para que las rutas de React Router (ej. /productos,
+  // /admin, /barbero) funcionen aunque el usuario recargue la página o
+  // entre directo por la URL.
+  app.get(/^(?!\/api|\/uploads|\/api-docs).*/, (req, res) => {
+    res.sendFile(path.join(frontendDist, 'index.html'))
+  })
+} else {
+  app.get('/', (req, res) => {
+    res.json({
+      app: 'La Fama Barber Shop API',
+      version: '1.0.0',
+      status: 'ok',
+      docs: `http://localhost:${env.PORT}/api-docs`,
+      nota: 'Frontend no compilado aún — corre npm run build en lafama-frontend para servirlo aquí.',
+    })
+  })
+}
 
 // ── Manejo de errores (siempre al final) ──────────────────────────────────────
 app.use(errorHandler)
