@@ -1,7 +1,15 @@
 import { useState, useEffect } from "react";
 
-const API = "http://localhost:3000/api";
+const API = import.meta.env.VITE_API_URL || "http://localhost:3000/api";
 const getToken = () => localStorage.getItem("admin_token");
+
+/** Convierte una ruta relativa ("/uploads/foto.jpg") en URL completa,
+ *  usando el mismo origen que la API configurada. Si ya es una URL
+ *  absoluta (http/https), la devuelve tal cual. */
+const getImageUrl = (img) => {
+  if (!img) return "";
+  return img.startsWith("/") ? API.replace('/api', '') + img : img;
+};
 
 const apiFetch = async (path, options = {}) => {
   const token = getToken();
@@ -531,6 +539,16 @@ const styles = `
     font-size: 14px; border: 1px dashed rgba(255,255,255,0.06); font-weight: 300;
   }
 
+  .session-toast {
+    position: fixed; top: 24px; left: 50%; transform: translateX(-50%);
+    z-index: 999; background: var(--negro2); border: 1px solid rgba(192,57,43,0.4);
+    color: var(--blanco); padding: 14px 28px; font-family: 'Barlow Condensed', sans-serif;
+    font-size: 14px; letter-spacing: 1px; box-shadow: 0 8px 24px rgba(0,0,0,0.5);
+    animation: sessionToastIn 0.3s ease, sessionToastOut 0.3s ease 2.2s forwards;
+  }
+  @keyframes sessionToastIn { from { opacity: 0; transform: translate(-50%, -10px); } to { opacity: 1; transform: translate(-50%, 0); } }
+  @keyframes sessionToastOut { to { opacity: 0; transform: translate(-50%, -10px); } }
+
   /* WHATSAPP */
   .wa-card {
     background: var(--negro2);
@@ -693,7 +711,12 @@ const styles = `
     .filter-btn { padding: 6px 10px; font-size: 10px; }
     .td-actions { flex-direction: column; gap: 4px; }
     .btn-sm { font-size: 10px; padding: 5px 10px; }
+    .descanso-row { flex-direction: column; }
+    .descanso-row button { width: 100%; }
   }
+
+  .descanso-row { display: flex; gap: 8px; margin-bottom: 12px; }
+  .descanso-row .input { flex: 1; min-width: 0; }
 
 
   .hamburger {
@@ -877,7 +900,17 @@ function Dashboard({ citas, servicios, barberos }) {
           <div className="section-title" style={{ fontSize: 18, marginBottom: 16 }}>Barberos activos</div>
           {barberos.map((b, i) => (
             <div key={b.id} style={{ display: "flex", alignItems: "center", gap: 12, padding: "10px 0", borderBottom: "1px solid rgba(255,255,255,0.04)" }}>
-              <span style={{ fontSize: 22 }}>{["👨🏻", "👨🏽", "👨🏾"][i] || "💈"}</span>
+              <div style={{
+                width: 34, height: 34, borderRadius: "50%", flexShrink: 0,
+                backgroundImage: b.foto ? `url(${getImageUrl(b.foto)})` : "none",
+                backgroundSize: "cover", backgroundPosition: "center",
+                background: b.foto ? undefined : "var(--negro3)",
+                border: "1px solid rgba(192,57,43,0.3)",
+                display: "flex", alignItems: "center", justifyContent: "center",
+                fontSize: 16,
+              }}>
+                {!b.foto && (["👨🏻", "👨🏽", "👨🏾"][i] || "💈")}
+              </div>
               <div>
                 <div style={{ fontSize: 13, fontWeight: 600 }}>{b.nombre}</div>
                 <div style={{ fontSize: 11, color: "var(--rojo)", fontFamily: "'Barlow Condensed', sans-serif", letterSpacing: 1 }}>{b.especialidad}</div>
@@ -1010,21 +1043,15 @@ function CitasPanel({ citas, onRefresh }) {
 function ServiciosPanel({ servicios, onRefresh }) {
   const [showModal, setShowModal] = useState(false);
   const [editing, setEditing] = useState(null);
-  const [form, setForm] = useState({ nombre: "", descripcion: "", precio: "", duracion: "", imagen: "" });
+  const [form, setForm] = useState({ nombre: "", descripcion: "", precio: "", duracion: "", imagen: "", orden: 0 });
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
-  // ✅ FUNCIÓN BIEN UBICADA (FUERA DEL RETURN)
-  const getImageUrl = (img) => {
-    if (!img) return "";
-    return img.startsWith("/")
-      ? "http://localhost:3000" + img
-      : img;
-  };
+  // ✅ usa el getImageUrl global (arriba del archivo)
 
   const openCreate = () => {
     setEditing(null);
-    setForm({ nombre: "", descripcion: "", precio: "", duracion: "", imagen: "" });
+    setForm({ nombre: "", descripcion: "", precio: "", duracion: "", imagen: "", orden: servicios.length });
     setError("");
     setShowModal(true);
   };
@@ -1036,7 +1063,8 @@ function ServiciosPanel({ servicios, onRefresh }) {
       descripcion: s.descripcion || "",
       precio: s.precio,
       duracion: s.duracion,
-      imagen: s.imagen || ""
+      imagen: s.imagen || "",
+      orden: s.orden ?? 0
     });
     setError("");
     setShowModal(true);
@@ -1051,7 +1079,8 @@ function ServiciosPanel({ servicios, onRefresh }) {
         descripcion: form.descripcion,
         precio: Number(form.precio),
         duracion: Number(form.duracion),
-        imagen: form.imagen || null
+        imagen: form.imagen || null,
+        orden: Number(form.orden) || 0
       };
 
       if (editing) {
@@ -1188,6 +1217,14 @@ function ServiciosPanel({ servicios, onRefresh }) {
               onChange={e => setForm(p => ({ ...p, duracion: e.target.value }))}
             />
 
+            <label className="field-label">Orden en la página (0 = primero)</label>
+            <input
+              className="input"
+              type="number"
+              value={form.orden}
+              onChange={e => setForm(p => ({ ...p, orden: e.target.value }))}
+            />
+
             <label className="field-label">Imagen (URL)</label>
             <input
               className="input"
@@ -1237,10 +1274,7 @@ function EstilosCortesPanel({ estilos, onRefresh }) {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
-  const getImageUrl = (img) => {
-    if (!img) return "";
-    return img.startsWith("/") ? "http://localhost:3000" + img : img;
-  };
+  // ✅ usa el getImageUrl global (arriba del archivo)
 
   const openCreate = () => {
     setEditing(null);
@@ -1508,14 +1542,35 @@ function EstilosCortesPanel({ estilos, onRefresh }) {
 function BarberosPanel({ barberos, onRefresh }) {
   const [showModal, setShowModal] = useState(false);
   const [editing, setEditing] = useState(null);
-  const [form, setForm] = useState({ nombre: "", especialidad: "", descripcion: "", foto: "", pin: "" });
+  const [form, setForm] = useState({ nombre: "", especialidad: "", descripcion: "", foto: "", pin: "", orden: 0 });
   const [archivo, setArchivo] = useState(null);
   const [preview, setPreview] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [diasDescanso, setDiasDescanso] = useState([]);
+  const [nuevoDescanso, setNuevoDescanso] = useState({ fecha: "", motivo: "" });
 
-  const openCreate = () => { setEditing(null); setForm({ nombre: "", especialidad: "", descripcion: "", foto: "", pin: "" }); setPreview(""); setArchivo(null); setError(""); setShowModal(true); };
-  const openEdit = (b) => { setEditing(b); setForm({ nombre: b.nombre, especialidad: b.especialidad, descripcion: b.descripcion || "", foto: b.foto || "", pin: "" }); setPreview(b.foto || ""); setArchivo(null); setError(""); setShowModal(true); };
+  const openCreate = () => { setEditing(null); setForm({ nombre: "", especialidad: "", descripcion: "", foto: "", pin: "", orden: barberos.length }); setPreview(""); setArchivo(null); setError(""); setDiasDescanso([]); setShowModal(true); };
+  const openEdit = async (b) => {
+    setEditing(b); setForm({ nombre: b.nombre, especialidad: b.especialidad, descripcion: b.descripcion || "", foto: b.foto || "", pin: "", orden: b.orden ?? 0 }); setPreview(b.foto || ""); setArchivo(null); setError(""); setShowModal(true);
+    try { setDiasDescanso(await apiFetch(`/barberos/${b.id}/dias-descanso`)); } catch (e) { setDiasDescanso([]); }
+  };
+
+  const agregarDescanso = async () => {
+    if (!nuevoDescanso.fecha) return;
+    try {
+      await apiFetch(`/barberos/${editing.id}/dias-descanso`, { method: "POST", body: JSON.stringify(nuevoDescanso) });
+      setNuevoDescanso({ fecha: "", motivo: "" });
+      setDiasDescanso(await apiFetch(`/barberos/${editing.id}/dias-descanso`));
+    } catch (e) { setError(e.error || "No se pudo agregar el día de descanso"); }
+  };
+
+  const quitarDescanso = async (id) => {
+    try {
+      await apiFetch(`/barberos/dias-descanso/${id}`, { method: "DELETE" });
+      setDiasDescanso(diasDescanso.filter(d => d.id !== id));
+    } catch (e) { }
+  };
 
   const save = async () => {
     setError(""); setLoading(true);
@@ -1524,7 +1579,7 @@ function BarberosPanel({ barberos, onRefresh }) {
       setLoading(false); return;
     }
     try {
-      const body = { nombre: form.nombre, especialidad: form.especialidad, descripcion: form.descripcion, pin: form.pin };
+      const body = { nombre: form.nombre, especialidad: form.especialidad, descripcion: form.descripcion, pin: form.pin, orden: Number(form.orden) || 0 };
 
       if (editing) {
         await apiFetch(`/barberos/${editing.id}`, { method: "PUT", body: JSON.stringify(body) });
@@ -1580,7 +1635,7 @@ function BarberosPanel({ barberos, onRefresh }) {
           <div key={b.id} className="item-card">
             <div style={{
               width: 80, height: 80, borderRadius: "50%",
-              backgroundImage: b.foto ? `url(${b.foto.startsWith('/') ? 'http://localhost:3000' + b.foto : b.foto})` : "none",
+              backgroundImage: b.foto ? `url(${getImageUrl(b.foto)})` : "none",
               backgroundSize: "cover", backgroundPosition: "center",
               background: b.foto ? undefined : "var(--negro3)",
               border: "2px solid rgba(192,57,43,0.4)",
@@ -1618,6 +1673,9 @@ function BarberosPanel({ barberos, onRefresh }) {
             <label className="field-label">Descripción corta</label>
             <input className="input" placeholder="Ej: 5 años de experiencia en cortes modernos" value={form.descripcion} onChange={e => setForm(p => ({ ...p, descripcion: e.target.value }))} />
 
+            <label className="field-label">Orden en la página (0 = primero)</label>
+            <input className="input" type="number" value={form.orden} onChange={e => setForm(p => ({ ...p, orden: e.target.value }))} />
+
             <label className="field-label">PIN de acceso (4 dígitos)</label>
             <input className="input" type="password" maxLength={4} placeholder="••••"
               value={form.pin} onChange={e => setForm(p => ({ ...p, pin: e.target.value.replace(/\D/g, "") }))}
@@ -1638,6 +1696,27 @@ function BarberosPanel({ barberos, onRefresh }) {
                 backgroundImage: `url(${preview})`, backgroundSize: "cover", backgroundPosition: "center",
                 border: "2px solid var(--rojo)", margin: "0 auto 16px"
               }} />
+            )}
+
+            {editing && (
+              <div style={{ marginTop: 20, paddingTop: 20, borderTop: "1px solid rgba(255,255,255,0.08)" }}>
+                <label className="field-label">Días de descanso (vacaciones, incapacidad, etc.)</label>
+                <div style={{ fontSize: 12, color: "var(--gris)", marginBottom: 12 }}>
+                  Mientras un día esté aquí, ese barbero no aparece disponible para agendar ese día — ni en la web ni en WhatsApp.
+                </div>
+                <div className="descanso-row">
+                  <input className="input" type="date" style={{ marginBottom: 0 }} value={nuevoDescanso.fecha} onChange={e => setNuevoDescanso(p => ({ ...p, fecha: e.target.value }))} />
+                  <input className="input" style={{ marginBottom: 0 }} placeholder="Motivo (opcional)" value={nuevoDescanso.motivo} onChange={e => setNuevoDescanso(p => ({ ...p, motivo: e.target.value }))} />
+                  <button className="btn-sm btn-edit" onClick={agregarDescanso} style={{ flexShrink: 0 }}>+ Agregar</button>
+                </div>
+                {diasDescanso.length === 0 && <div style={{ fontSize: 12, color: "var(--gris)" }}>Sin días de descanso registrados.</div>}
+                {diasDescanso.map(d => (
+                  <div key={d.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "8px 0", borderBottom: "1px solid rgba(255,255,255,0.04)", fontSize: 13 }}>
+                    <span>{new Date(d.fecha).toLocaleDateString("es-CO", { day: "numeric", month: "short", year: "numeric", timeZone: "UTC" })} {d.motivo && `— ${d.motivo}`}</span>
+                    <button className="btn-sm btn-delete" onClick={() => quitarDescanso(d.id)}>Quitar</button>
+                  </div>
+                ))}
+              </div>
             )}
 
             {error && <div className="error-msg">{error}</div>}
@@ -1922,7 +2001,7 @@ function GaleriaPanel({ servicios, onRefresh }) {
               )}
               {carrusel.map(img => (
                 <div key={img.id} style={{ position: "relative", background: "var(--negro2)", border: "1px solid rgba(255,255,255,0.06)" }}>
-                  <div style={{ height: 140, backgroundImage: `url(${img.url.startsWith('/') ? 'http://localhost:3000' + img.url : img.url})`, backgroundSize: "cover", backgroundPosition: "center" }} />
+                  <div style={{ height: 140, backgroundImage: `url(${getImageUrl(img.url)})`, backgroundSize: "cover", backgroundPosition: "center" }} />
                   <div style={{ padding: "10px 12px" }}>
                     <div style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: 14, fontWeight: 700, textTransform: "uppercase", letterSpacing: 1 }}>{img.nombre}</div>
                     <div style={{ fontSize: 11, color: "var(--gris)", marginTop: 2 }}>{img.descripcion}</div>
@@ -1962,7 +2041,7 @@ function ServicioImagenCard({ servicio, onActualizar }) {
 
   return (
     <div style={{ background: "var(--negro2)", border: "1px solid rgba(255,255,255,0.06)", padding: 16 }}>
-      <div style={{ height: 160, backgroundImage: preview ? `url(${preview.startsWith('/') ? 'http://localhost:3000' + preview : preview})` : "none", backgroundSize: "cover", backgroundPosition: "center", background: preview ? undefined : "var(--negro3)", border: "1px solid rgba(255,255,255,0.06)", marginBottom: 12, display: "flex", alignItems: "center", justifyContent: "center" }}>
+      <div style={{ height: 160, backgroundImage: preview ? `url(${getImageUrl(preview)})` : "none", backgroundSize: "cover", backgroundPosition: "center", background: preview ? undefined : "var(--negro3)", border: "1px solid rgba(255,255,255,0.06)", marginBottom: 12, display: "flex", alignItems: "center", justifyContent: "center" }}>
         {!preview && <span style={{ color: "var(--gris)", fontSize: 11, letterSpacing: 2, fontFamily: "'Barlow Condensed', sans-serif" }}>SIN IMAGEN</span>}
       </div>
       <div style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: 15, fontWeight: 700, textTransform: "uppercase", letterSpacing: 1, marginBottom: 10 }}>{servicio.nombre}</div>
@@ -1993,10 +2072,7 @@ function ProductosPanel({ onRefresh }) {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
-  const getImageUrl = (img) => {
-    if (!img) return "";
-    return img.startsWith("/") ? "http://localhost:3000" + img : img;
-  };
+  // ✅ usa el getImageUrl global (arriba del archivo)
 
   const loadProductos = async () => {
     try { const data = await apiFetch("/productos"); setProductos(data); } catch (e) {}
@@ -2348,6 +2424,7 @@ function PersonalPanel() {
   const initialForm = { nombre: "", email: "", telefono: "", password: "", rol: "RECEPCION" };
   const [personal, setPersonal] = useState([]);
   const [form, setForm] = useState(initialForm);
+  const [editing, setEditing] = useState(null);
   const [showModal, setShowModal] = useState(false);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
@@ -2359,14 +2436,24 @@ function PersonalPanel() {
   useEffect(() => { loadPersonal(); }, []);
 
   const openCreate = () => {
+    setEditing(null);
     setForm(initialForm); setError(""); setShowModal(true);
+  };
+
+  const openEdit = (persona) => {
+    setEditing(persona);
+    setForm({ nombre: persona.nombre, email: persona.email, telefono: persona.telefono || "", password: "", rol: persona.rol });
+    setError(""); setShowModal(true);
   };
 
   const save = async () => {
     const nombre = form.nombre.trim();
     const email = form.email.trim();
-    if (!nombre || !email || !form.password) {
-      setError("Nombre, email y contraseña son obligatorios"); return;
+    if (!nombre || !email) {
+      setError("Nombre y email son obligatorios"); return;
+    }
+    if (!editing && !form.password) {
+      setError("La contraseña es obligatoria para una cuenta nueva"); return;
     }
     if (nombre.length < 2) {
       setError("El nombre debe tener al menos 2 caracteres"); return;
@@ -2374,21 +2461,37 @@ function PersonalPanel() {
     if (!/^\S+@\S+\.\S+$/.test(email)) {
       setError("Ingresa un email válido"); return;
     }
-    if (form.password.length < 6) {
+    if (form.password && form.password.length < 6) {
       setError("La contraseña debe tener al menos 6 caracteres"); return;
     }
     setError(""); setLoading(true);
     try {
-      await apiFetch("/auth/personal", {
-        method: "POST",
-        body: JSON.stringify({ ...form, nombre, email, telefono: form.telefono.trim() || undefined }),
-      });
+      if (editing) {
+        const body = { nombre, email, telefono: form.telefono.trim() || undefined, rol: form.rol };
+        if (form.password) body.password = form.password;
+        await apiFetch(`/auth/personal/${editing.id}`, { method: "PUT", body: JSON.stringify(body) });
+      } else {
+        await apiFetch("/auth/personal", {
+          method: "POST",
+          body: JSON.stringify({ ...form, nombre, email, telefono: form.telefono.trim() || undefined }),
+        });
+      }
       setShowModal(false); loadPersonal();
     } catch (e) {
       const validationMessage = e.errores?.map(item => item.mensaje).join(" · ");
-      setError(validationMessage || e.error || "No se pudo crear la cuenta");
+      setError(validationMessage || e.error || "No se pudo guardar la cuenta");
     }
     setLoading(false);
+  };
+
+  const eliminar = async (persona) => {
+    if (!confirm(`¿Eliminar la cuenta de ${persona.nombre}?`)) return;
+    try {
+      await apiFetch(`/auth/personal/${persona.id}`, { method: "DELETE" });
+      loadPersonal();
+    } catch (e) {
+      alert(e.error || "No se pudo eliminar la cuenta");
+    }
   };
 
   const roleLabel = { RECEPCION: "Recepción", PRODUCTOS: "Productos" };
@@ -2409,10 +2512,14 @@ function PersonalPanel() {
             <div className="item-card-name">{persona.nombre}</div>
             <div className="item-card-sub">{persona.email}</div>
             {persona.telefono && <div className="item-card-sub">📞 {persona.telefono}</div>}
-            <div style={{ marginTop: 20 }}>
+            <div style={{ marginTop: 20, marginBottom: 16 }}>
               <span className={`badge ${persona.rol === "RECEPCION" ? "badge-CONFIRMADA" : "badge-COMPLETADA"}`}>
                 {roleLabel[persona.rol]}
               </span>
+            </div>
+            <div className="item-card-actions">
+              <button className="btn-sm btn-edit" onClick={() => openEdit(persona)}>Editar</button>
+              <button className="btn-sm btn-delete" onClick={() => eliminar(persona)}>Eliminar</button>
             </div>
           </div>
         ))}
@@ -2423,15 +2530,15 @@ function PersonalPanel() {
         <div className="modal-overlay" onClick={() => setShowModal(false)}>
           <div className="modal" onClick={e => e.stopPropagation()}>
             <button className="modal-close" onClick={() => setShowModal(false)}>✕</button>
-            <div className="modal-title">Nueva cuenta</div>
+            <div className="modal-title">{editing ? "Editar cuenta" : "Nueva cuenta"}</div>
             <label className="field-label">Nombre</label>
             <input className="input" value={form.nombre} onChange={e => setForm(p => ({ ...p, nombre: e.target.value }))} placeholder="Nombre completo" />
             <label className="field-label">Email</label>
             <input className="input" type="email" value={form.email} onChange={e => setForm(p => ({ ...p, email: e.target.value }))} placeholder="correo@lafama.com" />
             <label className="field-label">Teléfono (opcional)</label>
             <input className="input" value={form.telefono} onChange={e => setForm(p => ({ ...p, telefono: e.target.value }))} placeholder="300 000 0000" />
-            <label className="field-label">Contraseña temporal</label>
-            <input className="input" type="password" minLength="6" value={form.password} onChange={e => setForm(p => ({ ...p, password: e.target.value }))} placeholder="Mínimo 6 caracteres" />
+            <label className="field-label">{editing ? "Nueva contraseña (dejar vacío para no cambiarla)" : "Contraseña temporal"}</label>
+            <input className="input" type="password" minLength="6" value={form.password} onChange={e => setForm(p => ({ ...p, password: e.target.value }))} placeholder={editing ? "••••••••" : "Mínimo 6 caracteres"} />
             <label className="field-label">Panel asignado</label>
             <select className="input" value={form.rol} onChange={e => setForm(p => ({ ...p, rol: e.target.value }))}>
               <option value="RECEPCION">Recepción — citas</option>
@@ -2440,7 +2547,7 @@ function PersonalPanel() {
             {error && <div className="error-msg">{error}</div>}
             <div className="modal-actions">
               <button className="btn-full secondary" onClick={() => setShowModal(false)}>Cancelar</button>
-              <button className="btn-full primary" onClick={save} disabled={loading}>{loading ? "Creando..." : "Crear cuenta"}</button>
+              <button className="btn-full primary" onClick={save} disabled={loading}>{loading ? "Guardando..." : editing ? "Guardar cambios" : "Crear cuenta"}</button>
             </div>
           </div>
         </div>
@@ -2452,6 +2559,70 @@ function PersonalPanel() {
  
 
  
+// ── CONFIGURACIÓN ──
+function ConfiguracionPanel() {
+  const [config, setConfig] = useState({ mostrarProductos: true, mostrarMembresias: true });
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+
+  const load = async () => {
+    try { setConfig(await apiFetch("/configuracion")); } catch (e) { }
+    setLoading(false);
+  };
+
+  useEffect(() => { load(); }, []);
+
+  const toggle = async (campo) => {
+    const nuevo = { ...config, [campo]: !config[campo] };
+    setConfig(nuevo);
+    setSaving(true);
+    try {
+      await apiFetch("/configuracion", { method: "PUT", body: JSON.stringify(nuevo) });
+    } catch (e) {
+      setConfig(config); // revertir si falló
+    }
+    setSaving(false);
+  };
+
+  if (loading) return <div className="loading"><div className="spinner" />Cargando...</div>;
+
+  const Switch = ({ campo, titulo, desc }) => (
+    <div style={{ background: "var(--negro2)", border: "1px solid rgba(255,255,255,0.06)", padding: 24, display: "flex", justifyContent: "space-between", alignItems: "center", gap: 20, marginBottom: 16 }}>
+      <div>
+        <div style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: 16, fontWeight: 700, textTransform: "uppercase", letterSpacing: 1 }}>{titulo}</div>
+        <div style={{ fontSize: 13, color: "var(--gris)", marginTop: 4 }}>{desc}</div>
+      </div>
+      <button
+        onClick={() => toggle(campo)}
+        disabled={saving}
+        style={{
+          width: 52, height: 28, borderRadius: 14, border: "none", cursor: "pointer", flexShrink: 0,
+          background: config[campo] ? "var(--rojo)" : "rgba(255,255,255,0.1)", position: "relative", transition: "background 0.2s",
+        }}
+      >
+        <div style={{
+          width: 22, height: 22, borderRadius: "50%", background: "var(--blanco)", position: "absolute", top: 3,
+          left: config[campo] ? 27 : 3, transition: "left 0.2s",
+        }} />
+      </button>
+    </div>
+  );
+
+  return (
+    <div>
+      <div className="section-header">
+        <div>
+          <div className="section-title">Configuración</div>
+          <div style={{ color: "var(--gris)", fontSize: 13, marginTop: 4 }}>Muestra u oculta secciones enteras del sitio público sin borrar tus datos.</div>
+        </div>
+      </div>
+      <Switch campo="mostrarProductos" titulo="Tienda de productos" desc="Si lo apagas, se oculta el link 'Productos' del menú y la página /productos redirige al inicio." />
+      <Switch campo="mostrarMembresias" titulo="Membresías" desc="Si lo apagas, se oculta el link 'Membresías' del menú y la página /membresias redirige al inicio." />
+    </div>
+  );
+}
+
+
 // ── MAIN APP ──
 export default function AdminPanel({ panel = "admin" }) {
   const panelConfig = {
@@ -2462,6 +2633,11 @@ export default function AdminPanel({ panel = "admin" }) {
   /* const [user, setUser] = useState(() => JSON.parse(localStorage.getItem("user") || "null")); */
   const [user, setUser] = useState(() => JSON.parse(localStorage.getItem("admin_user") || "null"));
   const [page, setPage] = useState(panelConfig.initialPage);
+
+  useEffect(() => {
+    document.querySelector('.page-content')?.scrollTo(0, 0);
+    window.scrollTo(0, 0);
+  }, [page]);
   const [citas, setCitas] = useState([]);
   const [servicios, setServicios] = useState([]);
   const [estilos, setEstilos] = useState([]);
@@ -2469,6 +2645,7 @@ export default function AdminPanel({ panel = "admin" }) {
   const [loading, setLoading] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const [usuarios, setUsuarios] = useState([]);
+  const [sessionToast, setSessionToast] = useState(null);
 
   // Al cambiar entre rutas de panel, muestra siempre su módulo permitido.
   useEffect(() => { setPage(panelConfig.initialPage); }, [panel]);
@@ -2508,15 +2685,17 @@ export default function AdminPanel({ panel = "admin" }) {
   }; */
 
   const logout = () => {
+    setSessionToast({ msg: 'Sesión cerrada' });
     localStorage.removeItem("admin_token");
     localStorage.removeItem("admin_user");
-    setUser(null);
+    setTimeout(() => setUser(null), 700);
   };
   if (!user || !panelConfig.roles.includes(user.rol)) {
     return (
       <>
         <style>{styles}</style>
-        <LoginPage onLogin={u => setUser(u)} allowedRoles={panelConfig.roles} panelName={panelConfig.name} />
+        {sessionToast && <div className="session-toast">👋 {sessionToast.msg}</div>}
+        <LoginPage onLogin={u => { setSessionToast({ msg: `Bienvenido, ${u.nombre.split(' ')[0]}` }); setTimeout(() => setUser(u), 400); }} allowedRoles={panelConfig.roles} panelName={panelConfig.name} />
       </>
     );
   }
@@ -2532,6 +2711,7 @@ export default function AdminPanel({ panel = "admin" }) {
     { id: "membresias", icon: "⭐", label: "Membresías" },
     { id: "galeria", icon: "🖼", label: "Galería" },
     { id: "whatsapp", icon: "📱", label: "WhatsApp" },
+    { id: "configuracion", icon: "⚙", label: "Configuración" },
   ];
   const navItems = panelConfig.pages ? allNavItems.filter(item => panelConfig.pages.includes(item.id)) : allNavItems;
 
@@ -2545,7 +2725,8 @@ export default function AdminPanel({ panel = "admin" }) {
     personal: "Personal",
     membresias: "Membresías",
     galeria: "Galería & Imágenes",
-    whatsapp: "WhatsApp"
+    whatsapp: "WhatsApp",
+    configuracion: "Configuración"
   };
   return (
     <>
@@ -2618,6 +2799,7 @@ export default function AdminPanel({ panel = "admin" }) {
                 {page === "membresias" && <MembresiasPanel usuarios={usuarios} onRefresh={loadData} />}
                 {page === "galeria" && <GaleriaPanel servicios={servicios} onRefresh={loadData} />}
                 {page === "whatsapp" && <WhatsAppPanel />}
+                {page === "configuracion" && <ConfiguracionPanel />}
               </>
             )}
           </div>
