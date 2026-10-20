@@ -4,6 +4,24 @@ class IntentDetector {
     detect(message = "") {
         const text = message.trim().toLowerCase();
 
+        // Selecciones del menú inicial de WhatsApp.
+        if (text === "1") return INTENTS.BOOK_APPOINTMENT;
+        if (text === "2") return INTENTS.SERVICES;
+
+        // Prioriza la solicitud concreta en mensajes como "Hola, quiero una cita".
+        if (
+            text.includes("reservar") ||
+            text.includes("reserva") ||
+            text.includes("agendar") ||
+            text.includes("agenda") ||
+            text.includes("cita") ||
+            text.includes("quiero un corte") ||
+            text.includes("quiero cortarme") ||
+            text.includes("necesito un corte")
+        ) {
+            return INTENTS.BOOK_APPOINTMENT;
+        }
+
         // Saludos
         if (
             text.includes("hola") ||
@@ -28,20 +46,6 @@ class IntentDetector {
             text.includes("valor")
         ) {
             return INTENTS.SERVICES;
-        }
-
-        // Reservar cita
-        if (
-            text.includes("reservar") ||
-            text.includes("reserva") ||
-            text.includes("agendar") ||
-            text.includes("agenda") ||
-            text.includes("cita") ||
-            text.includes("quiero un corte") ||
-            text.includes("quiero cortarme") ||
-            text.includes("necesito un corte")
-        ) {
-            return INTENTS.BOOK_APPOINTMENT;
         }
 
         return INTENTS.UNKNOWN;

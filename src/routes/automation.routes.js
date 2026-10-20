@@ -32,26 +32,6 @@ router.get("/menu", automationController.getMenu);
  *         description: Lista de servicios obtenida correctamente
  */
 router.get("/services", automationController.getServices);
-/**
- * @swagger
- * /api/automation/chat:
- *   post:
- *     summary: Procesar mensajes del asistente
- *     tags: [Automation]
- *     requestBody:
- *       required: true
- *       content:
- *         application/json:
- *           schema:
- *             type: object
- *             properties:
- *               message:
- *                 type: string
- *                 example: Hola
- *     responses:
- *       200:
- *         description: Respuesta del asistente
- */
-router.post("/chat", automationController.chat);
+// El chat solo debe poder iniciarse desde el webhook de WhatsApp verificado.
 
 module.exports = router;

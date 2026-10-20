@@ -28,8 +28,6 @@ export default function Navbar({ usuario, miMembresia, onMisCitas, onLogout, onE
       .catch(() => {});
   }, []);
 
-  useEffect(() => { setMenuOpen(false); }, [location.pathname]);
-
   const goHomeAndScroll = (sectionId) => {
     setMenuOpen(false);
     if (location.pathname !== "/") {

@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { API } from "./services/api";
 
 const formatPrecio = (p) => '$' + Number(p).toLocaleString('es-CO');
@@ -21,7 +21,9 @@ const playNotificationSound = () => {
       osc.start(t);
       osc.stop(t + 0.3);
     });
-  } catch (e) {}
+  } catch {
+    // El sonido es opcional y el navegador puede bloquear Web Audio.
+  }
 };
 
 const IconTijeras = () => (
@@ -65,14 +67,14 @@ export default function RecepcionPanel() {
   const prevAgendaRef = useRef([]);
   const primeraCargaRef = useRef(true);
 
-  const headers = { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' };
+  const headers = useMemo(() => ({ Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' }), [token]);
 
-  const mostrarToast = (msg, type = 'ok') => {
+  const mostrarToast = useCallback((msg, type = 'ok') => {
     setToast({ msg, type });
     setTimeout(() => setToast(null), 3000);
-  };
+  }, []);
 
-  const cargarDatos = async () => {
+  const cargarDatos = useCallback(async () => {
     setLoading(true);
     try {
       const [resAgenda, resPendientes, resCaja, resProductos, resBarberos, resServicios] = await Promise.all([
@@ -111,19 +113,19 @@ export default function RecepcionPanel() {
       setProductos(await resProductos.json());
       setBarberos(await resBarberos.json());
       setServicios(await resServicios.json());
-    } catch (e) {
+    } catch {
       mostrarToast('Error cargando datos', 'error');
     } finally {
       setLoading(false);
     }
-  };
+  }, [fechaAgenda, headers, mostrarToast]);
 
   useEffect(() => {
     primeraCargaRef.current = true;
     if (token) cargarDatos();
     const intervalo = setInterval(() => { if (token) cargarDatos(); }, 15000);
     return () => clearInterval(intervalo);
-  }, [token, fechaAgenda]);
+  }, [token, fechaAgenda, cargarDatos]);
 
   const cambiarEstadoCita = async (citaId, estado) => {
     setCambiandoEstadoId(citaId);

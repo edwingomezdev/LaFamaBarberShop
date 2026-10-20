@@ -15,7 +15,16 @@ export default function PublicProducts() {
   const [productos, setProductos] = useState([]);
   const [loading, setLoading] = useState(true);
   const [categoria, setCategoria] = useState("TODOS");
-  const [usuario, setUsuario] = useState(null);
+  const [usuario, setUsuario] = useState(() => {
+    const token = getToken();
+    const savedUser = localStorage.getItem("usuario");
+    if (!token || !savedUser) return null;
+    try {
+      return JSON.parse(savedUser);
+    } catch {
+      return null;
+    }
+  });
   const [zoomItem, setZoomItem] = useState(null);
 
   useEffect(() => {
@@ -30,12 +39,7 @@ export default function PublicProducts() {
       .catch(() => setProductos([]))
       .finally(() => setLoading(false));
 
-    const t = getToken();
-    const u = localStorage.getItem("usuario");
-    if (t && u) {
-      try { setUsuario(JSON.parse(u)); } catch { /* ignore */ }
-    }
-  }, []);
+  }, [navigate]);
 
   const logout = () => {
     localStorage.removeItem("token");

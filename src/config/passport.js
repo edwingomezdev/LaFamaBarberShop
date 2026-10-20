@@ -3,10 +3,12 @@ const GoogleStrategy = require('passport-google-oauth20').Strategy
 const prisma = require('../prisma')
 const jwt = require('jsonwebtoken')
 
-passport.use(new GoogleStrategy({
+const googleOAuthEnabled = Boolean(process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET)
+
+if (googleOAuthEnabled) passport.use(new GoogleStrategy({
   clientID: process.env.GOOGLE_CLIENT_ID,
   clientSecret: process.env.GOOGLE_CLIENT_SECRET,
-  callbackURL: '/api/auth/google/callback'
+  callbackURL: process.env.GOOGLE_CALLBACK_URL || 'http://localhost:3000/api/auth/google/callback'
 }, async (accessToken, refreshToken, profile, done) => {
   try {
     const email = profile.emails[0].value
@@ -44,3 +46,4 @@ passport.serializeUser((user, done) => done(null, user))
 passport.deserializeUser((user, done) => done(null, user))
 
 module.exports = passport
+module.exports.googleOAuthEnabled = googleOAuthEnabled

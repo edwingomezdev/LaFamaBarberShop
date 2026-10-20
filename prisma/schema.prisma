@@ -265,3 +265,12 @@ model Configuracion {
   mostrarProductos  Boolean @default(true)
   mostrarMembresias Boolean @default(true)
 }
+
+model ConversacionWhatsapp {
+  telefono  String   @id
+  estado    Json
+  expiresAt DateTime
+  updatedAt DateTime @updatedAt
+
+  @@index([expiresAt])
+}

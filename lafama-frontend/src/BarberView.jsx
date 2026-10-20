@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 
-const API = import.meta.env.VITE_API_URL || "http://localhost:3000/api";
+const API = import.meta.env.VITE_API_URL || (import.meta.env.DEV ? "http://localhost:3000/api" : "/api");
 const getToken = () => localStorage.getItem("barber_token");
 
 const getImageUrl = (img) => {
@@ -45,7 +45,9 @@ const playNotificationSound = () => {
       osc.start(t);
       osc.stop(t + 0.3);
     });
-  } catch (e) {}
+  } catch {
+    // El sonido es opcional y el navegador puede bloquear Web Audio.
+  }
 };
 
 const playAlertSound = () => {
@@ -64,7 +66,9 @@ const playAlertSound = () => {
       osc.start(t);
       osc.stop(t + 0.25);
     });
-  } catch (e) {}
+  } catch {
+    // El sonido es opcional y el navegador puede bloquear Web Audio.
+  }
 };
 
 
@@ -137,7 +141,7 @@ function LoginScreen({ onLogin }) {
       const data = await res.json();
       if (!res.ok) { setError(data.error || "PIN incorrecto"); setLoading(false); return; }
       onLogin(data.barbero, data.token);
-    } catch (e) {
+    } catch {
       setError("Error de conexión");
     }
     setLoading(false);
@@ -278,7 +282,7 @@ export default function BarberView() {
       prevCitasRef.current = data;
       setCitas(data);
       if (isFirst) setLoading(false);
-    } catch (e) {
+    } catch {
       if (isFirst) setLoading(false);
     }
   }, []);
@@ -295,7 +299,7 @@ export default function BarberView() {
     try {
       const data = await apiFetch("/estilos-cortes");
       setEstilosCortes(data);
-    } catch (e) {
+    } catch {
       setEstilosCortes([]);
     }
   }, []);
@@ -304,6 +308,8 @@ export default function BarberView() {
   useEffect(() => {
     if (!barbero) return;
 
+    // El efecto inicia una carga remota y muestra su estado mientras llega.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setLoading(true);
     loadCitas(barbero.id, true);
     loadEstilosCortes();

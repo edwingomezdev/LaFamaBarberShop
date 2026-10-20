@@ -3,9 +3,9 @@
 // Antes: cada componente inyectaba su propio <style> con cientos de líneas.
 // ─────────────────────────────────────────────────────────────────────────────
 
-import { StrictMode, useEffect } from 'react';
+import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
-import { BrowserRouter, Routes, Route, useLocation } from 'react-router-dom';
+import { BrowserRouter, Routes, Route } from 'react-router-dom';
 
 // ── CSS global (importar aquí, no dentro de los componentes) ──────────────────
 import './styles/global.css';
@@ -23,12 +23,7 @@ import RecepcionPanel from './RecepcionPanel.jsx';
 import BarberView from './BarberView.jsx';
 import PublicProducts from './PublicProducts.jsx';
 import PublicMembresias from './PublicMembresias.jsx';
-
-function ScrollToTop() {
-  const { pathname } = useLocation();
-  useEffect(() => { window.scrollTo(0, 0); }, [pathname]);
-  return null;
-}
+import ScrollToTop from './components/ScrollToTop.jsx';
 
 // ── Render ────────────────────────────────────────────────────────────────────
 createRoot(document.getElementById('root')).render(

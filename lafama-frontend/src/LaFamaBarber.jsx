@@ -1,15 +1,13 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { FaWhatsapp, FaInstagram, FaPhoneAlt, FaCut } from "react-icons/fa";
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import Navbar from "./components/Navbar";
 import Footer from "./components/Footer";
-import ImageZoomModal from "./components/ImageZoomModal";
-import Membresias from "./components/Membresias";
 import ReservaModal from "./components/ReservaModal";
 
-const API = import.meta.env.VITE_API_URL || "http://localhost:3000/api";
+const API = import.meta.env.VITE_API_URL || (import.meta.env.DEV ? "http://localhost:3000/api" : "/api");
 gsap.registerPlugin(ScrollTrigger);
 
 
@@ -70,7 +68,7 @@ function Cursor() {
 }
 
 function Toast({ msg, type, onClose }) {
-  useEffect(() => { const t = setTimeout(onClose, 3500); return () => clearTimeout(t); }, []);
+  useEffect(() => { const t = setTimeout(onClose, 3500); return () => clearTimeout(t); }, [onClose]);
   return <div className={`toast ${type}`}>{msg}</div>;
 }
 
@@ -360,7 +358,7 @@ function HeroCarousel({ onReservar, onServicios }) {
     setProgress(0);
   };
 
-  const startAuto = () => {
+  const startAuto = useCallback(() => {
     clearInterval(intervalRef.current);
     clearInterval(progressRef.current);
     setProgress(0);
@@ -375,12 +373,14 @@ function HeroCarousel({ onReservar, onServicios }) {
       setProgress(0);
       p = 0;
     }, DURATION);
-  };
+  }, [slides.length]);
 
+  // El carrusel usa temporizadores y actualiza el progreso desde ellos.
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     startAuto();
     return () => { clearInterval(intervalRef.current); clearInterval(progressRef.current); };
-  }, [slides]);
+  }, [slides, startAuto]);
 
   const handleNav = (idx) => { goTo(idx); startAuto(); };
 
@@ -461,11 +461,35 @@ export default function App() {
   const [toast, setToast] = useState(null);
   const [vista, setVista] = useState('home');
   const [miMembresia, setMiMembresia] = useState(null);
-  const [planesMembresia, setPlanesMembresia] = useState([]);
-  const [productos, setProductos] = useState([]);
-  const [zoomItem, setZoomItem] = useState(null);
   const [showReservaModal, setShowReservaModal] = useState(false);
   const [flippedServicios, setFlippedServicios] = useState(() => new Set());
+
+  const showToast = (msg, type = 'success') => setToast({ msg, type });
+
+  const fetchMiMembresia = useCallback(async () => {
+    try {
+      const r = await fetch(`${API}/membresias/mi-membresia-detalle`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      const data = await r.json();
+      setMiMembresia(data || null);
+    } catch (error) {
+      console.error('No se pudo cargar la membresía:', error);
+    }
+  }, [token]);
+
+  const fetchMisCitas = useCallback(async () => {
+    setLoadingCitas(true);
+    try {
+      const r = await fetch(`${API}/citas/mis-citas`, { headers: { Authorization: `Bearer ${token}` } });
+      const d = await r.json();
+      setMisCitas(Array.isArray(d) ? d : []);
+    } catch (error) {
+      console.error('No se pudieron cargar las citas:', error);
+    } finally {
+      setLoadingCitas(false);
+    }
+  }, [token]);
 
   useEffect(() => {
     // Capturar token de Google OAuth
@@ -501,9 +525,6 @@ export default function App() {
     }
     fetch(`${API}/servicios`).then(r => r.json()).then(d => setServicios(d)).finally(() => setLoadingSvcs(false));
     fetch(`${API}/barberos`).then(r => r.json()).then(d => setBarberos(d)).finally(() => setLoadingBarbs(false));
-    fetch(`${API}/membresias`).then(r => r.json()).then(d => { if (Array.isArray(d)) setPlanesMembresia(d); }).catch(() => { });
-    fetch(`${API}/productos`).then(r => r.json()).then(d => { if (Array.isArray(d)) setProductos(d); }).catch(() => { });
-
     // Señales que deja el Navbar cuando te trae de otra página (ej. /productos)
     const scrollTarget = sessionStorage.getItem('scrollTarget');
     const targetVista = sessionStorage.getItem('targetVista');
@@ -520,31 +541,14 @@ export default function App() {
       sessionStorage.removeItem('openAuth');
       setShowAuth(true);
     }
-  }, []);
+  }, [navigate]);
 
-  useEffect(() => { if (token) { fetchMisCitas(); fetchMiMembresia(); } }, [token]);
-
-  const fetchMiMembresia = async () => {
-    try {
-      const r = await fetch(`${API}/membresias/mi-membresia-detalle`, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      const data = await r.json();
-      setMiMembresia(data || null);
-    } catch { }
-  };
-
-  const fetchMisCitas = async () => {
-    setLoadingCitas(true);
-    try {
-      const r = await fetch(`${API}/citas/mis-citas`, { headers: { Authorization: `Bearer ${token}` } });
-      const d = await r.json();
-      setMisCitas(Array.isArray(d) ? d : []);
-    } catch { }
-    setLoadingCitas(false);
-  };
-
-  const showToast = (msg, type = 'success') => setToast({ msg, type });
+  useEffect(() => {
+    if (token) {
+      fetchMisCitas();
+      fetchMiMembresia();
+    }
+  }, [token, fetchMisCitas, fetchMiMembresia]);
 
   const toggleServicio = (s) => setSelectedServicios(prev => prev.find(x => x.id === s.id) ? prev.filter(x => x.id !== s.id) : [...prev, s]);
 
@@ -582,7 +586,7 @@ export default function App() {
     } catch { showToast('Error de conexión', 'error'); }
   };
 
-  const fetchSlotsDisponibles = async () => {
+  const fetchSlotsDisponibles = useCallback(async () => {
     if (!selectedBarbero || !selectedFecha || !selectedServicios.length) { setSlotsDisponibles([]); return; }
     setLoadingSlots(true);
     try {
@@ -593,12 +597,12 @@ export default function App() {
       setSlotsDisponibles(Array.isArray(data) ? data : []);
     } catch { setSlotsDisponibles([]); }
     setLoadingSlots(false);
-  };
+  }, [selectedBarbero, selectedFecha, selectedServicios]);
 
   useEffect(() => {
     setSelectedHora('');
     fetchSlotsDisponibles();
-  }, [selectedBarbero, selectedFecha, selectedServicios]);
+  }, [fetchSlotsDisponibles]);
 
   const logout = () => { localStorage.removeItem('token'); localStorage.removeItem('usuario'); setUsuario(null); setToken(''); setMisCitas([]); setVista('home'); showToast('Sesión cerrada'); };
 
@@ -825,120 +829,6 @@ export default function App() {
 
 
 
-      {/* Sección de membresías trasladada a la ruta pública /membresias. */}
-      {false && vista === 'home' && <Membresias planesMembresia={planesMembresia} />}
-
-      {/* Catálogo trasladado a la ruta pública /productos. */}
-      {false && vista === 'home' && (
-        <section className="pf-section" id="productos">
-          <div className="section-header">
-            <span className="section-tag">Lo que usamos</span>
-            <h2 className="section-title">NUESTROS<br /><span style={{ color: 'var(--rojo)' }}>PRODUCTOS</span></h2>
-          </div>
-          <div className="pf-grid">
-            {productos.length > 0 ? productos.map((p, i) => (
-              <div key={p.id} className="pf-card" style={{ animationDelay: `${i * 0.1}s` }}>
-                <div className="pf-glow" />
-                {p.badge && <span className="pf-badge">{p.badge}</span>}
-                <button
-                  type="button"
-                  className="pf-img-wrap img-zoom-trigger"
-                  onClick={() => setZoomItem({
-                    img: getImageUrl(p.imagen) || 'https://images.unsplash.com/photo-1599351431202-1e0f0137899a?w=1200&q=90&fit=crop',
-                    title: p.nombre,
-                    sub: p.categoria || 'Producto',
-                    desc: p.descripcion,
-                    price: `$${Number(p.precio).toLocaleString('es-CO')}`,
-                  })}
-                >
-                  <img
-                    src={getImageUrl(p.imagen) || 'https://images.unsplash.com/photo-1599351431202-1e0f0137899a?w=300&q=90&fit=crop'}
-                    alt={p.nombre}
-                    onError={e => { e.target.src = 'https://images.unsplash.com/photo-1599351431202-1e0f0137899a?w=300&q=90&fit=crop'; }}
-                  />
-                </button>
-                <div className="pf-shadow" />
-                <div className="pf-nombre">{p.nombre}</div>
-                {p.categoria && <div className="pf-cat">{p.categoria}</div>}
-                <div className="pf-divider" />
-                {p.descripcion && <div className="pf-desc">{p.descripcion}</div>}
-                <div className="pf-footer">
-                  <div className="pf-precio">${Number(p.precio).toLocaleString('es-CO')}</div>
-                  <div style={{ fontSize: '10px', letterSpacing: '3px', textTransform: 'uppercase', color: 'var(--gris)', fontFamily: "'Oswald',sans-serif" }}>En tienda</div>
-                </div>
-              </div>
-            )) : (
-              /* Productos por defecto si no hay en la BD */
-              <>
-                <div className="pf-card">
-                  <div className="pf-glow" />
-                  <span className="pf-badge">Top seller</span>
-                  <div className="pf-img-wrap">
-                    <img src="https://images.unsplash.com/photo-1599351431202-1e0f0137899a?w=300&q=90&fit=crop" alt="Pomada" />
-                  </div>
-                  <div className="pf-shadow" />
-                  <div className="pf-nombre">Pomada</div>
-                  <div className="pf-cat">Fijación & Brillo</div>
-                  <div className="pf-divider" />
-                  <div className="pf-desc">Fijación fuerte con acabado brillante. Ideal para estilos clásicos y modernos.</div>
-                  <div className="pf-footer">
-                    <div className="pf-precio">$35.000</div>
-                    <div style={{ fontSize: '10px', letterSpacing: '3px', textTransform: 'uppercase', color: 'var(--gris)', fontFamily: "'Oswald',sans-serif" }}>En tienda</div>
-                  </div>
-                </div>
-                <div className="pf-card">
-                  <div className="pf-glow" />
-                  <div className="pf-img-wrap">
-                    <img src="https://images.unsplash.com/photo-1585747860715-2ba37e788b70?w=300&q=90&fit=crop" alt="Navaja" />
-                  </div>
-                  <div className="pf-shadow" />
-                  <div className="pf-nombre">Navaja</div>
-                  <div className="pf-cat">Afeitado Clásico</div>
-                  <div className="pf-divider" />
-                  <div className="pf-desc">Acero inoxidable de alta gama. Afeitado limpio y preciso.</div>
-                  <div className="pf-footer">
-                    <div className="pf-precio">$85.000</div>
-                    <div style={{ fontSize: '10px', letterSpacing: '3px', textTransform: 'uppercase', color: 'var(--gris)', fontFamily: "'Oswald',sans-serif" }}>En tienda</div>
-                  </div>
-                </div>
-                <div className="pf-card">
-                  <div className="pf-glow" />
-                  <div className="pf-img-wrap">
-                    <img src="https://images.unsplash.com/photo-1503951914875-452162b0f3f1?w=300&q=90&fit=crop" alt="Aftershave" />
-                  </div>
-                  <div className="pf-shadow" />
-                  <div className="pf-nombre">Aftershave</div>
-                  <div className="pf-cat">Cuidado & Fragancia</div>
-                  <div className="pf-divider" />
-                  <div className="pf-desc">Calma la piel tras el afeitado. Aroma amaderado con aloe y mentol.</div>
-                  <div className="pf-footer">
-                    <div className="pf-precio">$48.000</div>
-                    <div style={{ fontSize: '10px', letterSpacing: '3px', textTransform: 'uppercase', color: 'var(--gris)', fontFamily: "'Oswald',sans-serif" }}>En tienda</div>
-                  </div>
-                </div>
-                <div className="pf-card">
-                  <div className="pf-glow" />
-                  <span className="pf-badge">Nuevo</span>
-                  <div className="pf-img-wrap">
-                    <img src="https://images.unsplash.com/photo-1621605815971-fbc98d665033?w=300&q=90&fit=crop" alt="Cera" />
-                  </div>
-                  <div className="pf-shadow" />
-                  <div className="pf-nombre">Cera Mat</div>
-                  <div className="pf-cat">Control & Textura</div>
-                  <div className="pf-divider" />
-                  <div className="pf-desc">Acabado mate natural con fijación media. Perfecta para looks texturizados.</div>
-                  <div className="pf-footer">
-                    <div className="pf-precio">$32.000</div>
-                    <div style={{ fontSize: '10px', letterSpacing: '3px', textTransform: 'uppercase', color: 'var(--gris)', fontFamily: "'Oswald',sans-serif" }}>En tienda</div>
-                  </div>
-                </div>
-              </>
-            )}
-          </div>
-        </section>
-      )}
-
-
       {/* ── SECCIÓN DIRECCIÓN ── */}
       {vista === 'home' && <section className="direccion-section">
         <div className="direccion-info">
@@ -1009,7 +899,6 @@ export default function App() {
 
       {toast && <Toast msg={toast.msg} type={toast.type} onClose={() => setToast(null)} />}
 
-      <ImageZoomModal item={zoomItem} onClose={() => setZoomItem(null)} />
 
       <ReservaModal
         open={showReservaModal}

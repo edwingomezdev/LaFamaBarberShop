@@ -9,7 +9,16 @@ import Membresias from "./components/Membresias";
 export default function PublicMembresias() {
   const navigate = useNavigate();
   const [planes, setPlanes] = useState([]);
-  const [usuario, setUsuario] = useState(null);
+  const [usuario, setUsuario] = useState(() => {
+    const token = getToken();
+    const savedUser = localStorage.getItem("usuario");
+    if (!token || !savedUser) return null;
+    try {
+      return JSON.parse(savedUser);
+    } catch {
+      return null;
+    }
+  });
 
   useEffect(() => {
     fetch(`${API}/configuracion`)
@@ -22,12 +31,7 @@ export default function PublicMembresias() {
       .then((data) => setPlanes(Array.isArray(data) ? data : []))
       .catch(() => setPlanes([]));
 
-    const t = getToken();
-    const u = localStorage.getItem("usuario");
-    if (t && u) {
-      try { setUsuario(JSON.parse(u)); } catch { /* ignore */ }
-    }
-  }, []);
+  }, [navigate]);
 
   const logout = () => {
     localStorage.removeItem("token");

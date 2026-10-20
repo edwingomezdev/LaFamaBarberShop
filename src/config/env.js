@@ -9,7 +9,15 @@ const envSchema = z.object({
   SESSION_SECRET: z.string({ required_error: 'SESSION_SECRET es requerida' }).min(16, 'SESSION_SECRET debe tener al menos 16 caracteres'),
   GOOGLE_CLIENT_ID: z.string().optional(),
   GOOGLE_CLIENT_SECRET: z.string().optional(),
+  GOOGLE_CALLBACK_URL: z.string().url().optional(),
+  FRONTEND_URL: z.string().url().optional(),
   CORS_ORIGIN: z.string().default('http://localhost:5173'),
+  META_APP_SECRET: z.string().optional(),
+  UPLOADS_DIR: z.string().optional(),
+  WHATSAPP_VERIFY_TOKEN: z.string().optional(),
+  WHATSAPP_ACCESS_TOKEN: z.string().optional(),
+  WHATSAPP_PHONE_NUMBER_ID: z.string().optional(),
+  GRAPH_API_VERSION: z.string().default('v23.0'),
 })
 
 const _parsed = envSchema.safeParse(process.env)

@@ -1,6 +1,7 @@
 const appointmentsRepository = require("../repositories/appointments.repository");
 const timeHelper = require("../helpers/time.helper");
 const prisma = require("../../prisma");
+const dateParser = require("../parsers/dateParser");
 
 class AvailabilityEngine {
 
@@ -74,6 +75,9 @@ class AvailabilityEngine {
         fecha,
         duracion
     ) {
+        // No ofrecer fechas pasadas ni aceptar fechas de calendario inválidas.
+        if (!dateParser.isValid(fecha) || fecha < dateParser.todayBogota()) return [];
+
         // Si el barbero tiene marcado ese día como descanso
         // (vacaciones, incapacidad, etc.), no hay ningún horario
         // disponible — ni para la web ni para el bot de WhatsApp,

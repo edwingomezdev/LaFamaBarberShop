@@ -2,6 +2,7 @@ const express = require('express')
 const router = express.Router()
 const multer = require('multer')
 const path = require('path')
+const uploadsDir = require('../config/uploads')
 const { verificarToken, soloAdmin } = require('../middlewares/auth.middleware')
 const {
   obtenerCarrusel,
@@ -15,7 +16,7 @@ const {
 // Configurar multer
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
-    cb(null, path.join(__dirname, '../uploads'))
+    cb(null, uploadsDir)
   },
   filename: (req, file, cb) => {
     const ext = path.extname(file.originalname)

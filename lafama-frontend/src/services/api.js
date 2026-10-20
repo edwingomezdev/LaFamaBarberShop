@@ -3,12 +3,11 @@
 // Antes: const API = "http://localhost:3000/api" estaba copiado en 3 archivos.
 // Ahora: se define una vez aquí y se importa desde cualquier componente.
 //
-// En producción, crea un archivo .env en lafama-frontend/ con:
-//   VITE_API_URL=https://tu-dominio.com/api
-// Y en tu hosting agrega la variable de entorno.
+// Si frontend y API usan dominios distintos, configura VITE_API_URL en el
+// build. Cuando comparten dominio, la ruta /api funciona sin configuración.
 // ─────────────────────────────────────────────────────────────────────────────
 
-export const API = import.meta.env.VITE_API_URL || "http://localhost:3000/api";
+export const API = import.meta.env.VITE_API_URL || (import.meta.env.DEV ? "http://localhost:3000/api" : "/api");
 
 // ── Helpers de token ──────────────────────────────────────────────────────────
 
@@ -101,7 +100,9 @@ export const getImageUrl = (imgPath) => {
   if (imgPath.startsWith("http")) return imgPath;
   // En desarrollo apunta a localhost; en producción usa la misma base
   const base = import.meta.env.VITE_API_URL
-    ? import.meta.env.VITE_API_URL.replace("/api", "")
-    : "http://localhost:3000";
+    ? new URL(import.meta.env.VITE_API_URL, window.location.origin).origin
+    : import.meta.env.DEV
+      ? "http://localhost:3000"
+      : window.location.origin;
   return `${base}${imgPath}`;
 };

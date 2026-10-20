@@ -1,7 +1,12 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 
-const API = import.meta.env.VITE_API_URL || "http://localhost:3000/api";
+const API = import.meta.env.VITE_API_URL || (import.meta.env.DEV ? "http://localhost:3000/api" : "/api");
 const getToken = () => localStorage.getItem("admin_token");
+const PANEL_CONFIG = {
+  admin: { name: "Administrativo", roles: ["ADMIN"], initialPage: "dashboard", pages: null },
+  recepcion: { name: "Recepción", roles: ["ADMIN", "RECEPCION"], initialPage: "citas", pages: ["citas"] },
+  productos: { name: "Inventario", roles: ["ADMIN", "PRODUCTOS"], initialPage: "productos", pages: ["productos"] },
+};
 
 /** Convierte una ruta relativa ("/uploads/foto.jpg") en URL completa,
  *  usando el mismo origen que la API configurada. Si ya es una URL
@@ -956,17 +961,16 @@ function Dashboard({ citas, servicios, barberos }) {
 // ── CITAS ──
 function CitasPanel({ citas, onRefresh }) {
   const [filtro, setFiltro] = useState("TODAS");
-  const [loading, setLoading] = useState(false);
 
   const filtradas = filtro === "TODAS" ? citas : citas.filter(c => c.estado === filtro);
 
   const cambiarEstado = async (id, estado) => {
-    setLoading(true);
     try {
       await apiFetch(`/citas/${id}/estado`, { method: "PUT", body: JSON.stringify({ estado }) });
       onRefresh();
-    } catch (e) { }
-    setLoading(false);
+    } catch (error) {
+      console.error("No se pudo actualizar la cita:", error);
+    }
   };
 
   return (
@@ -1111,7 +1115,9 @@ function ServiciosPanel({ servicios, onRefresh }) {
     try {
       await apiFetch(`/servicios/${id}`, { method: "DELETE" });
       onRefresh();
-    } catch (e) { }
+    } catch (error) {
+      console.error("No se pudo eliminar el servicio:", error);
+    }
   };
 
   return (
@@ -1553,7 +1559,7 @@ function BarberosPanel({ barberos, onRefresh }) {
   const openCreate = () => { setEditing(null); setForm({ nombre: "", especialidad: "", descripcion: "", foto: "", pin: "", orden: barberos.length }); setPreview(""); setArchivo(null); setError(""); setDiasDescanso([]); setShowModal(true); };
   const openEdit = async (b) => {
     setEditing(b); setForm({ nombre: b.nombre, especialidad: b.especialidad, descripcion: b.descripcion || "", foto: b.foto || "", pin: "", orden: b.orden ?? 0 }); setPreview(b.foto || ""); setArchivo(null); setError(""); setShowModal(true);
-    try { setDiasDescanso(await apiFetch(`/barberos/${b.id}/dias-descanso`)); } catch (e) { setDiasDescanso([]); }
+    try { setDiasDescanso(await apiFetch(`/barberos/${b.id}/dias-descanso`)); } catch { setDiasDescanso([]); }
   };
 
   const agregarDescanso = async () => {
@@ -1569,7 +1575,9 @@ function BarberosPanel({ barberos, onRefresh }) {
     try {
       await apiFetch(`/barberos/dias-descanso/${id}`, { method: "DELETE" });
       setDiasDescanso(diasDescanso.filter(d => d.id !== id));
-    } catch (e) { }
+    } catch (error) {
+      console.error("No se pudo quitar el día de descanso:", error);
+    }
   };
 
   const save = async () => {
@@ -1618,7 +1626,12 @@ function BarberosPanel({ barberos, onRefresh }) {
 
   const eliminar = async (id) => {
     if (!confirm("¿Eliminar este barbero?")) return;
-    try { await apiFetch(`/barberos/${id}`, { method: "DELETE" }); onRefresh(); } catch (e) { }
+    try {
+      await apiFetch(`/barberos/${id}`, { method: "DELETE" });
+      onRefresh();
+    } catch (error) {
+      console.error("No se pudo eliminar el barbero:", error);
+    }
   };
 
   const avatares = ["👨🏻", "👨🏽", "👨🏾", "👨🏿", "👨"];
@@ -1860,7 +1873,9 @@ function GaleriaPanel({ servicios, onRefresh }) {
     try {
       const data = await apiFetch("/imagenes/carrusel");
       setCarrusel(data);
-    } catch (e) { }
+    } catch (error) {
+      console.error("No se pudo cargar el carrusel:", error);
+    }
     setLoading(false);
   };
 
@@ -1913,7 +1928,9 @@ function GaleriaPanel({ servicios, onRefresh }) {
     try {
       await apiFetch(`/imagenes/carrusel/${id}`, { method: "DELETE" });
       loadCarrusel();
-    } catch (e) { }
+    } catch (error) {
+      console.error("No se pudo eliminar la imagen del carrusel:", error);
+    }
   };
 
   const actualizarImagenServicio = async (servicioId, archivo, url) => {
@@ -1928,7 +1945,9 @@ function GaleriaPanel({ servicios, onRefresh }) {
         body: fd
       });
       onRefresh();
-    } catch (e) { }
+    } catch (error) {
+      console.error("No se pudo actualizar la imagen del servicio:", error);
+    }
   };
 
   return (
@@ -2063,7 +2082,7 @@ function ServicioImagenCard({ servicio, onActualizar }) {
 
 
 // ── PRODUCTOS ──
-function ProductosPanel({ onRefresh }) {
+function ProductosPanel() {
   const [productos, setProductos] = useState([]);
   const [showModal, setShowModal] = useState(false);
   const [editing, setEditing] = useState(null);
@@ -2075,9 +2094,16 @@ function ProductosPanel({ onRefresh }) {
   // ✅ usa el getImageUrl global (arriba del archivo)
 
   const loadProductos = async () => {
-    try { const data = await apiFetch("/productos"); setProductos(data); } catch (e) {}
+    try {
+      const data = await apiFetch("/productos");
+      setProductos(data);
+    } catch (error) {
+      setError(error.error || "No se pudieron cargar los productos");
+    }
   };
 
+  // La carga asíncrona actualiza el estado cuando termina la petición.
+  // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => { loadProductos(); }, []);
 
   const openCreate = () => { setEditing(null); setForm({ nombre: "", descripcion: "", precio: "", categoria: "", badge: "", imagen: "", stock: "" }); setError(""); setShowModal(true); };
@@ -2100,7 +2126,12 @@ function ProductosPanel({ onRefresh }) {
 
   const eliminar = async (id) => {
     if (!confirm("¿Eliminar este producto?")) return;
-    try { await apiFetch(`/productos/${id}`, { method: "DELETE" }); loadProductos(); } catch (e) {}
+    try {
+      await apiFetch(`/productos/${id}`, { method: "DELETE" });
+      await loadProductos();
+    } catch (error) {
+      setError(error.error || "No se pudo eliminar el producto");
+    }
   };
 
   return (
@@ -2174,7 +2205,7 @@ function ProductosPanel({ onRefresh }) {
 }
 
 // ── MEMBRESÍAS ──
-function MembresiasPanel({ usuarios, onRefresh }) {
+function MembresiasPanel({ usuarios }) {
   const [membresias, setMembresias] = useState([]);
   const [asignaciones, setAsignaciones] = useState([]);
   const [tab, setTab] = useState("planes");
@@ -2190,9 +2221,13 @@ function MembresiasPanel({ usuarios, onRefresh }) {
     try {
       const [m, a] = await Promise.all([apiFetch("/membresias"), apiFetch("/membresias/asignaciones")]);
       setMembresias(m); setAsignaciones(a);
-    } catch (e) {}
+    } catch (error) {
+      setError(error.error || "No se pudieron cargar las membresías");
+    }
   };
 
+  // La carga asíncrona actualiza el estado cuando terminan las peticiones.
+  // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => { loadData(); }, []);
 
   const openCreate = () => { setEditing(null); setForm({ nombre: "", precio: "", cortesIncluidos: "", descripcion: "", beneficios: "", descuento: "" }); setError(""); setShowModal(true); };
@@ -2215,12 +2250,22 @@ function MembresiasPanel({ usuarios, onRefresh }) {
 
   const eliminar = async (id) => {
     if (!confirm("¿Eliminar este plan?")) return;
-    try { await apiFetch(`/membresias/${id}`, { method: "DELETE" }); loadData(); } catch (e) {}
+    try {
+      await apiFetch(`/membresias/${id}`, { method: "DELETE" });
+      await loadData();
+    } catch (error) {
+      setError(error.error || "No se pudo eliminar el plan");
+    }
   };
 
   const cancelarAsignacion = async (id, nombre) => {
     if (!confirm(`¿Cancelar la membresía de ${nombre}?`)) return;
-    try { await apiFetch(`/membresias/asignaciones/${id}`, { method: "DELETE" }); loadData(); } catch (e) {}
+    try {
+      await apiFetch(`/membresias/asignaciones/${id}`, { method: "DELETE" });
+      await loadData();
+    } catch (error) {
+      setError(error.error || "No se pudo cancelar la membresía");
+    }
   };
 
   const asignar = async () => {
@@ -2405,7 +2450,7 @@ function MembresiasPanel({ usuarios, onRefresh }) {
             <input className="input" type="date" value={formAsignar.fechaFin}
               onChange={e => setFormAsignar(p => ({ ...p, fechaFin: e.target.value }))}
               min={new Date().toISOString().split('T')[0]}
-              max={new Date(Date.now() + 60 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]}
+              max={new Date(new Date().getTime() + 60 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]}
             />
             {error && <div className="error-msg">{error}</div>}
             <div className="modal-actions">
@@ -2433,6 +2478,8 @@ function PersonalPanel() {
     try { setPersonal(await apiFetch("/auth/personal")); } catch (e) { setError(e.error || "No se pudo cargar el personal"); }
   };
 
+  // La carga asíncrona actualiza el estado cuando termina la petición.
+  // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => { loadPersonal(); }, []);
 
   const openCreate = () => {
@@ -2566,10 +2613,16 @@ function ConfiguracionPanel() {
   const [saving, setSaving] = useState(false);
 
   const load = async () => {
-    try { setConfig(await apiFetch("/configuracion")); } catch (e) { }
+    try {
+      setConfig(await apiFetch("/configuracion"));
+    } catch (error) {
+      console.error("No se pudo cargar la configuración:", error);
+    }
     setLoading(false);
   };
 
+  // La carga asíncrona actualiza el estado cuando termina la petición.
+  // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => { load(); }, []);
 
   const toggle = async (campo) => {
@@ -2580,20 +2633,36 @@ function ConfiguracionPanel() {
       await apiFetch("/configuracion", { method: "PUT", body: JSON.stringify(nuevo) });
     } catch (e) {
       setConfig(config); // revertir si falló
+      console.error("No se pudo guardar la configuración:", e);
     }
     setSaving(false);
   };
 
   if (loading) return <div className="loading"><div className="spinner" />Cargando...</div>;
 
-  const Switch = ({ campo, titulo, desc }) => (
+  return (
+    <div>
+      <div className="section-header">
+        <div>
+          <div className="section-title">Configuración</div>
+          <div style={{ color: "var(--gris)", fontSize: 13, marginTop: 4 }}>Muestra u oculta secciones enteras del sitio público sin borrar tus datos.</div>
+        </div>
+      </div>
+      <ConfiguracionSwitch campo="mostrarProductos" titulo="Tienda de productos" desc="Si lo apagas, se oculta el link 'Productos' del menú y la página /productos redirige al inicio." config={config} saving={saving} onToggle={toggle} />
+      <ConfiguracionSwitch campo="mostrarMembresias" titulo="Membresías" desc="Si lo apagas, se oculta el link 'Membresías' del menú y la página /membresias redirige al inicio." config={config} saving={saving} onToggle={toggle} />
+    </div>
+  );
+}
+
+function ConfiguracionSwitch({ campo, titulo, desc, config, saving, onToggle }) {
+  return (
     <div style={{ background: "var(--negro2)", border: "1px solid rgba(255,255,255,0.06)", padding: 24, display: "flex", justifyContent: "space-between", alignItems: "center", gap: 20, marginBottom: 16 }}>
       <div>
         <div style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: 16, fontWeight: 700, textTransform: "uppercase", letterSpacing: 1 }}>{titulo}</div>
         <div style={{ fontSize: 13, color: "var(--gris)", marginTop: 4 }}>{desc}</div>
       </div>
       <button
-        onClick={() => toggle(campo)}
+        onClick={() => onToggle(campo)}
         disabled={saving}
         style={{
           width: 52, height: 28, borderRadius: 14, border: "none", cursor: "pointer", flexShrink: 0,
@@ -2607,29 +2676,12 @@ function ConfiguracionPanel() {
       </button>
     </div>
   );
-
-  return (
-    <div>
-      <div className="section-header">
-        <div>
-          <div className="section-title">Configuración</div>
-          <div style={{ color: "var(--gris)", fontSize: 13, marginTop: 4 }}>Muestra u oculta secciones enteras del sitio público sin borrar tus datos.</div>
-        </div>
-      </div>
-      <Switch campo="mostrarProductos" titulo="Tienda de productos" desc="Si lo apagas, se oculta el link 'Productos' del menú y la página /productos redirige al inicio." />
-      <Switch campo="mostrarMembresias" titulo="Membresías" desc="Si lo apagas, se oculta el link 'Membresías' del menú y la página /membresias redirige al inicio." />
-    </div>
-  );
 }
 
 
 // ── MAIN APP ──
 export default function AdminPanel({ panel = "admin" }) {
-  const panelConfig = {
-    admin: { name: "Administrativo", roles: ["ADMIN"], initialPage: "dashboard", pages: null },
-    recepcion: { name: "Recepción", roles: ["ADMIN", "RECEPCION"], initialPage: "citas", pages: ["citas"] },
-    productos: { name: "Inventario", roles: ["ADMIN", "PRODUCTOS"], initialPage: "productos", pages: ["productos"] },
-  }[panel] || { name: "Administrativo", roles: ["ADMIN"], initialPage: "dashboard", pages: null };
+  const panelConfig = PANEL_CONFIG[panel] || PANEL_CONFIG.admin;
   /* const [user, setUser] = useState(() => JSON.parse(localStorage.getItem("user") || "null")); */
   const [user, setUser] = useState(() => JSON.parse(localStorage.getItem("admin_user") || "null"));
   const [page, setPage] = useState(panelConfig.initialPage);
@@ -2648,9 +2700,11 @@ export default function AdminPanel({ panel = "admin" }) {
   const [sessionToast, setSessionToast] = useState(null);
 
   // Al cambiar entre rutas de panel, muestra siempre su módulo permitido.
-  useEffect(() => { setPage(panelConfig.initialPage); }, [panel]);
+  // El panel cambia al navegar entre rutas y debe empezar en su página inicial.
+  // eslint-disable-next-line react-hooks/set-state-in-effect
+  useEffect(() => { setPage(panelConfig.initialPage); }, [panelConfig.initialPage]);
 
-  const loadData = async () => {
+  const loadData = useCallback(async () => {
     setLoading(true);
     try {
       if (panel === "recepcion") {
@@ -2671,12 +2725,23 @@ export default function AdminPanel({ panel = "admin" }) {
     }
     // Cargar usuarios por separado para no bloquear el resto
     if (panel === "admin") {
-      try { const u = await apiFetch("/auth/usuarios"); setUsuarios(u); } catch (e) {}
+      try {
+        const u = await apiFetch("/auth/usuarios");
+        setUsuarios(u);
+      } catch (error) {
+        console.error("No se pudieron cargar los usuarios:", error);
+      }
     }
     setLoading(false);
-  };
+  }, [panel]);
 
-  useEffect(() => { if (user && panelConfig.roles.includes(user.rol)) loadData(); }, [user]);
+  useEffect(() => {
+    if (user && panelConfig.roles.includes(user.rol)) {
+      // La carga remota debe iniciar al abrir el panel.
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      loadData();
+    }
+  }, [user, loadData, panelConfig.roles]);
 
   /* const logout = () => {
     localStorage.removeItem("token");

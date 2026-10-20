@@ -76,14 +76,22 @@ const passport = require('../config/passport')
 
 // Google OAuth
 router.get('/google',
+  (req, res, next) => {
+    if (!passport.googleOAuthEnabled) return res.status(503).json({ error: 'El inicio con Google no está configurado' })
+    next()
+  },
   passport.authenticate('google', { scope: ['profile', 'email'] })
 )
 
 router.get('/google/callback',
-  passport.authenticate('google', { session: false, failureRedirect: `${process.env.FRONTEND_URL}/login?error=true` }),
+  (req, res, next) => {
+    if (!passport.googleOAuthEnabled) return res.status(503).json({ error: 'El inicio con Google no está configurado' })
+    next()
+  },
+  passport.authenticate('google', { session: false, failureRedirect: `${(process.env.FRONTEND_URL || '').replace(/\/$/, '')}/login?error=true` }),
   (req, res) => {
     const { token, usuario } = req.user
-    res.redirect(`${process.env.FRONTEND_URL}?token=${token}&usuario=${encodeURIComponent(JSON.stringify(usuario))}`)
+    res.redirect(`${process.env.FRONTEND_URL || '/'}?token=${token}&usuario=${encodeURIComponent(JSON.stringify(usuario))}`)
   }
 )
 

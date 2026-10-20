@@ -1,6 +1,11 @@
 const metaConfig = require("../../config/meta.config");
 const whatsappService = require("../services/whatsapp.service");
 const automationService = require("../../services/automation.service");
+const responseFormatter = require("../formatters/response.formatter");
+const crypto = require("crypto");
+
+const recentMessages = new Map();
+const MESSAGE_DEDUPE_TTL_MS = 24 * 60 * 60 * 1000;
 
 class WhatsAppController {
 
@@ -24,56 +29,65 @@ class WhatsAppController {
 
     async receive(req, res) {
 
+        let messageId;
         try {
 
-            console.log("================================");
-            console.log("📩 WEBHOOK RECIBIDO");
-            console.log(JSON.stringify(req.body, null, 2));
-            console.log("================================");
-
-            const message =
-                req.body?.entry?.[0]
-                    ?.changes?.[0]
-                    ?.value?.messages?.[0];
-
-            if (!message) {
-                return res.sendStatus(200);
+            // Meta signs the exact raw JSON body with the app secret.
+            if (!metaConfig.appSecret || !req.rawBody) {
+                console.error("META_APP_SECRET no está configurado para validar el webhook.");
+                return res.sendStatus(503);
             }
 
-            if (message.type !== "text") {
-                console.log("Mensaje ignorado:", message.type);
-                return res.sendStatus(200);
+            const signature = req.get("x-hub-signature-256") || "";
+            const signatureHex = signature.startsWith("sha256=") ? signature.slice(7) : "";
+            const receivedSignature = Buffer.from(signatureHex, "hex");
+            const expectedSignature = crypto
+                .createHmac("sha256", metaConfig.appSecret)
+                .update(req.rawBody)
+                .digest();
+
+            if (
+                receivedSignature.length !== expectedSignature.length ||
+                !crypto.timingSafeEqual(receivedSignature, expectedSignature)
+            ) {
+                return res.sendStatus(401);
             }
 
-            const phone = message.from;
-            const text = message.text?.body?.trim() || "";
+            const messages = (req.body?.entry || [])
+                .flatMap(entry => entry.changes || [])
+                .flatMap(change => change.value?.messages || []);
 
-            console.log("📱", phone);
-            console.log("💬", text);
+            if (messages.length === 0) return res.sendStatus(200);
 
-            const response =
-                await automationService.chat({
-                    phone,
-                    message: text
+            const now = Date.now();
+            for (const [id, expiresAt] of recentMessages) {
+                if (expiresAt <= now) recentMessages.delete(id);
+            }
+
+            for (const message of messages) {
+                messageId = message.id;
+                if (messageId && recentMessages.has(messageId)) continue;
+                if (messageId) recentMessages.set(messageId, now + MESSAGE_DEDUPE_TTL_MS);
+
+                if (message.type !== "text") {
+                    console.log("Mensaje ignorado:", message.type);
+                    continue;
+                }
+
+                const response = await automationService.chat({
+                    phone: message.from,
+                    message: message.text?.body?.trim() || "",
                 });
 
-            console.log("========= RESPUESTA =========");
-            console.log(response);
-            console.log("=============================");
-
-            if (response?.message) {
-
-                await whatsappService.sendTextMessage(
-                    phone,
-                    response.message
-                );
-
+                const reply = responseFormatter.format(response);
+                if (reply) await whatsappService.sendTextMessage(message.from, reply);
             }
 
             return res.sendStatus(200);
 
         } catch (error) {
 
+            if (messageId) recentMessages.delete(messageId);
             console.error(error);
 
             return res.sendStatus(500);

@@ -41,10 +41,11 @@ export default function ReservaModal({
     if (!open) return;
     // Si ya venías con servicio/barbero elegidos desde la página,
     // el modal arranca directo en el paso que corresponda.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     if (!selectedServicios.length) setStep(1);
     else if (!selectedBarbero) setStep(2);
     else setStep(3);
-  }, [open]);
+  }, [open, selectedServicios.length, selectedBarbero]);
 
   if (!open) return null;
 

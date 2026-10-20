@@ -1,47 +1,48 @@
-const { createInitialState } = require("./conversationState");
+const prisma = require('../../prisma')
+const { createInitialState } = require('./conversationState')
 
 class ConversationManager {
-
   constructor() {
-    this.sessions = new Map();
+    this.sessionTtlMs = 2 * 60 * 60 * 1000
   }
 
-  get(phone) {
+  async get(phone) {
+    const now = new Date()
+    const saved = await prisma.conversacionWhatsapp.findUnique({ where: { telefono: phone } })
 
-    if (!this.sessions.has(phone)) {
-
-      const state = createInitialState();
-
-      this.sessions.set(phone, state);
-
+    if (!saved || saved.expiresAt <= now) {
+      if (saved) await this.clear(phone)
+      return createInitialState()
     }
 
-    return this.sessions.get(phone);
-
+    await prisma.conversacionWhatsapp.update({
+      where: { telefono: phone },
+      data: { expiresAt: new Date(Date.now() + this.sessionTtlMs) },
+    })
+    return saved.estado
   }
 
-  set(phone, context) {
-    this.sessions.set(phone, context);
+  async update(phone, updates) {
+    const current = await this.get(phone)
+    const next = { ...current, ...updates }
+    await prisma.conversacionWhatsapp.upsert({
+      where: { telefono: phone },
+      create: {
+        telefono: phone,
+        estado: next,
+        expiresAt: new Date(Date.now() + this.sessionTtlMs),
+      },
+      update: {
+        estado: next,
+        expiresAt: new Date(Date.now() + this.sessionTtlMs),
+      },
+    })
+    return next
   }
 
-
-  update(phone, updates) {
-
-    const current = this.get(phone);
-
-    const next = {
-      ...current,
-      ...updates,
-    };
-
-    this.sessions.set(phone, next);
-
-    return next;
-
-  }
-  clear(phone) {
-    this.sessions.delete(phone);
+  async clear(phone) {
+    await prisma.conversacionWhatsapp.deleteMany({ where: { telefono: phone } })
   }
 }
 
-module.exports = new ConversationManager();
+module.exports = new ConversationManager()

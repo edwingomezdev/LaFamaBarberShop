@@ -6,6 +6,7 @@ const express = require('express')
 const cors = require('cors')
 const path = require('path')
 const fs = require('fs')
+const uploadsDir = require('./config/uploads')
 const swaggerUi = require('swagger-ui-express')
 const session = require('express-session')
 
@@ -44,7 +45,11 @@ const app = express()
 
 // ── Middlewares globales ──────────────────────────────────────────────────────
 app.use(cors({ origin: env.CORS_ORIGIN, credentials: true }))
-app.use(express.json())
+app.use(express.json({
+  verify: (req, res, buffer) => {
+    req.rawBody = Buffer.from(buffer)
+  },
+}))
 app.use(session({ secret: env.SESSION_SECRET, resave: false, saveUninitialized: false }))
 app.use(passport.initialize())
 app.use(passport.session())
@@ -56,7 +61,7 @@ app.use((req, res, next) => {
 });
 
 // ── Archivos estáticos ────────────────────────────────────────────────────────
-app.use('/uploads', express.static(path.join(__dirname, 'uploads')))
+app.use('/uploads', express.static(uploadsDir))
 
 // ── Documentación ─────────────────────────────────────────────────────────────
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec))

@@ -8,21 +8,28 @@ class ResponseFormatter {
             return "Ha ocurrido un error.";
         }
 
-        // Si el servicio ya devuelve un mensaje simple
-        if (response.message && !response.data) {
-            return response.message;
+        const parts = [];
+        if (response.message) parts.push(response.message);
+        let data = response.data;
+        // El inicio de reserva devuelve el resultado de getServices anidado.
+        while (data && !Array.isArray(data) && data.data !== undefined) data = data.data;
+
+        if (Array.isArray(data) && data.length === 0) {
+            return [...parts, "No hay opciones disponibles en este momento. Por favor, intenta más tarde."].filter(Boolean).join("\n\n");
+        }
+
+        if (Array.isArray(data) && data.every(item => typeof item === "string")) {
+            return [...parts, `🕒 *Horarios disponibles*\n\n${data.map((time, i) => `${i + 1}. ${time}`).join("\n")}\n\nResponde con el número o escribe la hora (por ejemplo, ${data[0]} o 2:30 pm).`].join("\n\n");
         }
 
         // Menú principal
-        if (response.data?.options) {
+        if (data?.options) {
 
-            let text = "";
+            let text = "💈 *La Fama Barber*\n\n";
 
-            text += "💈 *La Fama Barber*\n\n";
+            text += `${data.welcome}\n\n`;
 
-            text += `${response.data.welcome}\n\n`;
-
-            response.data.options.forEach(option => {
+            data.options.forEach(option => {
 
                 text += `${option.id}. ${option.label}\n`;
 
@@ -30,26 +37,39 @@ class ResponseFormatter {
 
             text += "\nEscribe el número de la opción.";
 
-            return text;
+            return [...parts, text].join("\n\n");
         }
 
-        // Lista de servicios
-        if (Array.isArray(response.data)) {
+        // Listas de servicios y barberos
+        if (Array.isArray(data)) {
 
-            let text = "✂️ *Servicios disponibles*\n\n";
+            const isServices = data.some(item => item.precio !== undefined);
+            let text = isServices ? "✂️ *Servicios disponibles*\n\n" : "💈 *Barberos disponibles*\n\n";
 
-            response.data.forEach((service, index) => {
+            data.forEach((item, index) => {
 
-                text += `${index + 1}. ${service.nombre}\n`;
+                text += `${index + 1}. ${item.nombre}`;
+                if (isServices && item.precio !== undefined) text += ` — $${Number(item.precio).toLocaleString("es-CO")} COP`;
+                if (isServices && item.duracion) text += ` (${item.duracion} min)`;
+                text += "\n";
 
             });
 
-           text += "\nResponde con el número o con el nombre del servicio.";
+            text += isServices
+                ? "\nResponde con el número o el nombre del servicio."
+                : "\nResponde con el número o el nombre del barbero.";
 
-            return text;
+            return [...parts, text].join("\n\n");
         }
 
-        return response.message || "No hay información disponible.";
+        if (data?.confirmationMessage) {
+            const details = data;
+            return [...parts, `📋 *Resumen de tu cita*\nServicio: ${details.service}\nBarbero: ${details.barber}\nFecha: ${details.date}\nHora: ${details.time}\n\n${details.confirmationMessage}`].join("\n\n");
+        }
+
+        if (data?.suggestion) parts.push(data.suggestion);
+
+        return parts.join("\n\n") || "No hay información disponible.";
     }
 
 }

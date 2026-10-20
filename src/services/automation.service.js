@@ -28,16 +28,6 @@ class AutomationService {
                         key: "SERVICES",
                         label: "Ver servicios",
                     },
-                    {
-                        id: 3,
-                        key: "PROMOTIONS",
-                        label: "Promociones",
-                    },
-                    {
-                        id: 4,
-                        key: "HUMAN_SUPPORT",
-                        label: "Hablar con un asesor",
-                    },
                 ],
             },
         };
@@ -130,21 +120,16 @@ class AutomationService {
             };
         }
 
-        conversationManager.update(phone, {
+        await conversationManager.update(phone, {
             step: CONVERSATION_STEPS.SELECT_BARBER,
             service,
         });
-
-        console.log(
-            "Contexto actualizado:",
-            conversationManager.get(phone)
-        );
 
         const barbers = await this.getBarbers();
 
         return {
             success: true,
-            message: `Perfecto. Has seleccionado "${service.nombre}". Ahora elige un barbero.`,
+            message: `Perfecto, elegiste *${service.nombre}*. Ahora selecciona un barbero de la lista.`,
             data: barbers,
         };
 
@@ -162,19 +147,14 @@ class AutomationService {
             };
         }
 
-        conversationManager.update(phone, {
+        await conversationManager.update(phone, {
             step: CONVERSATION_STEPS.SELECT_DATE,
             barber,
         });
 
-        console.log(
-            "Contexto actualizado:",
-            conversationManager.get(phone)
-        );
-
         return {
             success: true,
-            message: `Perfecto. Has elegido a ${barber.nombre}. Ahora dime la fecha en la que deseas tu cita.`,
+            message: `Perfecto, elegiste a *${barber.nombre}*. ¿Qué día quieres tu cita? Puedes escribir *mañana*, *pasado mañana* o una fecha como *12/10/2026*.`,
         };
 
     }
@@ -187,7 +167,14 @@ class AutomationService {
             return {
                 success: false,
                 message:
-                    "Formato de fecha inválido. Usa YYYY-MM-DD, por ejemplo: 2026-08-15.",
+                    "No reconocí esa fecha. Escribe *mañana*, *pasado mañana* o una fecha como *12/10/2026*.",
+            };
+        }
+
+        if (date < dateParser.todayBogota()) {
+            return {
+                success: false,
+                message: "Esa fecha ya pasó. Dime otra fecha futura, por ejemplo *mañana* o *12/10/2026*.",
             };
         }
 
@@ -200,24 +187,19 @@ class AutomationService {
         if (slots.length === 0) {
             return {
                 success: false,
-                message: `No hay horarios disponibles con ${context.barber.nombre} ese día. Escribe otra fecha (YYYY-MM-DD).`,
+                    message: `No encontré horarios disponibles con ${context.barber.nombre} ese día. Dime otra fecha, por ejemplo *mañana* o *12/10/2026*.`,
             };
         }
 
-        conversationManager.update(phone, {
+        await conversationManager.update(phone, {
             step: CONVERSATION_STEPS.SELECT_TIME,
             date,
             availableSlots: slots,
         });
 
-        console.log(
-            "Contexto actualizado:",
-            conversationManager.get(phone)
-        );
-
         return {
             success: true,
-            message: `Horarios disponibles para el ${date}:\n${slots.join(', ')}\n\nEscribe la hora que quieras (ej: ${slots[0]}).`,
+            message: `Estos son los horarios para el *${date}* con *${context.barber.nombre}*.`,
             data: slots,
         };
 
@@ -226,13 +208,15 @@ class AutomationService {
 
     async processSelectTime(phone, context, message) {
 
-        const time = timeParser.parse(message);
+        const selected = message.trim();
+        const time = /^\d+$/.test(selected)
+            ? context.availableSlots?.[Number(selected) - 1]
+            : timeParser.parse(selected);
 
         if (!time) {
             return {
                 success: false,
-                message:
-                    "Hora inválida. Usa el formato HH:mm. Ejemplo: 14:30.",
+                message: "No reconocí esa hora. Responde con el número de la lista o una hora como *14:30* o *2:30 pm*.",
             };
         }
 
@@ -241,23 +225,19 @@ class AutomationService {
         if (!slotsDisponibles.includes(time)) {
             return {
                 success: false,
-                message: `Esa hora no está disponible. Elige una de estas: ${slotsDisponibles.join(', ')}.`,
+                message: "Esa hora ya no está disponible. Elige otra de la lista.",
+                data: slotsDisponibles,
             };
         }
 
-        conversationManager.update(phone, {
+        await conversationManager.update(phone, {
             step: CONVERSATION_STEPS.CONFIRM_BOOKING,
             time,
         });
 
-        console.log(
-            "Contexto actualizado:",
-            conversationManager.get(phone)
-        );
-
         return {
             success: true,
-            message: "Confirma tu reserva.",
+            message: "Revisa los datos antes de reservar.",
             data: {
                 service: context.service.nombre,
                 barber: context.barber.nombre,
@@ -301,13 +281,46 @@ class AutomationService {
             // momento de crear — si alguien más tomó ese horario mientras
             // el cliente confirmaba, avisamos en vez de dejar la
             // conversación atascada.
+            const status = err.statusCode || err.status || 0;
+            if (status >= 500 || status === 0) {
+                console.error("Error temporal al crear una cita desde WhatsApp:", err);
+                return {
+                    success: false,
+                    message: "Ocurrió un problema temporal y la cita no quedó confirmada. Escribe *CONFIRMAR* para volver a intentarlo o *CANCELAR* para empezar de nuevo.",
+                };
+            }
+
+            const slots = await availabilityService.getAvailableSlots({
+                barberoId: context.barber.id,
+                fecha: context.date,
+                servicioId: context.service.id,
+            }).catch(() => []);
+
+            if (slots.length > 0) {
+                await conversationManager.update(phone, {
+                    step: CONVERSATION_STEPS.SELECT_TIME,
+                    availableSlots: slots,
+                    time: null,
+                });
+                return {
+                    success: false,
+                    message: "No pude completar la reserva; no quedó agendada. Elige otra hora de la lista e inténtalo de nuevo.",
+                    data: slots,
+                };
+            }
+
+            await conversationManager.update(phone, {
+                step: CONVERSATION_STEPS.SELECT_DATE,
+                time: null,
+                availableSlots: [],
+            });
             return {
-                success: true,
-                message: `No se pudo completar la reserva: ${err.message || 'ese horario ya no está disponible'}. Escribe "reservar" para intentar de nuevo.`,
+                success: false,
+                message: "No pude completar la reserva; no quedó agendada. Dime otra fecha para buscar horarios.",
             };
         }
 
-        conversationManager.clear(phone);
+        await conversationManager.clear(phone);
 
         return {
 
@@ -353,14 +366,7 @@ class AutomationService {
 
     async chat({ phone, message }) {
 
-        const context = conversationManager.get(phone);
-
-        console.log(
-            "Conversación:",
-            phone,
-            context
-        );
-        console.log("Contexto al iniciar chat:", context);
+        const context = await conversationManager.get(phone);
 
         // Palabra de escape: sin importar en qué paso esté atascada la
         // conversación, el cliente siempre puede reiniciarla. Sin esto,
@@ -378,7 +384,7 @@ class AutomationService {
         ].includes(textoNormalizado);
 
         if (esReinicio) {
-            conversationManager.clear(phone);
+            await conversationManager.clear(phone);
             return this.getMenu();
         }
 
@@ -400,7 +406,7 @@ class AutomationService {
 
             case INTENTS.GREETING:
 
-                conversationManager.update(phone, {
+                await conversationManager.update(phone, {
                     step: CONVERSATION_STEPS.START,
                 });
 
@@ -408,18 +414,14 @@ class AutomationService {
 
             case INTENTS.SERVICES:
 
-                conversationManager.update(phone, {
+                await conversationManager.update(phone, {
                     step: CONVERSATION_STEPS.SELECT_SERVICE,
                 });
-                console.log(
-                    "Estado:",
-                    conversationManager.get(phone)
-                );
                 return this.getServices();
 
             case INTENTS.BOOK_APPOINTMENT:
 
-                conversationManager.update(phone, {
+                await conversationManager.update(phone, {
                     step: CONVERSATION_STEPS.SELECT_SERVICE,
                 });
 
