@@ -5,7 +5,7 @@
   "scripts": {
     "dev": "nodemon src/index.js",
     "start": "npx prisma migrate deploy && node src/index.js",
-    "build": "cd lafama-frontend && npm ci --include=dev && npm run build",
+    "build": "npm ci && cd lafama-frontend && npm ci --include=dev && npm run build",
     "postinstall": "npx prisma generate"
   },
   "keywords": [],
