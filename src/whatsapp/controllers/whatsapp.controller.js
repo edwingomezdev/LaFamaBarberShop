@@ -34,7 +34,7 @@ class WhatsAppController {
 
             // Meta signs the exact raw JSON body with the app secret.
             if (!metaConfig.appSecret || !req.rawBody) {
-                console.error("META_APP_SECRET no está configurado para validar el webhook.");
+                console.error("Webhook WhatsApp rechazado: falta META_APP_SECRET o el cuerpo original.");
                 return res.sendStatus(503);
             }
 
@@ -50,14 +50,20 @@ class WhatsAppController {
                 receivedSignature.length !== expectedSignature.length ||
                 !crypto.timingSafeEqual(receivedSignature, expectedSignature)
             ) {
+                console.error("Webhook WhatsApp rechazado: firma inválida. Confirma que META_APP_SECRET sea de la misma app de Meta.");
                 return res.sendStatus(401);
             }
 
-            const messages = (req.body?.entry || [])
+            const values = (req.body?.entry || [])
                 .flatMap(entry => entry.changes || [])
-                .flatMap(change => change.value?.messages || []);
+                .map(change => change.value || {});
+            const messages = values.flatMap(value => value.messages || []);
 
-            if (messages.length === 0) return res.sendStatus(200);
+            if (messages.length === 0) {
+                const statuses = values.reduce((total, value) => total + (value.statuses?.length || 0), 0);
+                console.log(`Webhook WhatsApp aceptado sin mensajes entrantes (${statuses} actualizaciones de estado). Revisa la suscripción al campo messages si esperabas un mensaje.`);
+                return res.sendStatus(200);
+            }
 
             const now = Date.now();
             for (const [id, expiresAt] of recentMessages) {
@@ -74,13 +80,18 @@ class WhatsAppController {
                     continue;
                 }
 
+                console.log("Webhook WhatsApp aceptado: mensaje de texto recibido.");
+
                 const response = await automationService.chat({
                     phone: message.from,
                     message: message.text?.body?.trim() || "",
                 });
 
                 const reply = responseFormatter.format(response);
-                if (reply) await whatsappService.sendTextMessage(message.from, reply);
+                if (reply) {
+                    await whatsappService.sendTextMessage(message.from, reply);
+                    console.log("Respuesta automática de WhatsApp enviada.");
+                }
             }
 
             return res.sendStatus(200);
@@ -88,7 +99,7 @@ class WhatsAppController {
         } catch (error) {
 
             if (messageId) recentMessages.delete(messageId);
-            console.error(error);
+            console.error("Error procesando webhook WhatsApp:", error.response?.status || error.status || error.code || error.message);
 
             return res.sendStatus(500);
 
