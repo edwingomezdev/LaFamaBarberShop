@@ -231,21 +231,33 @@ class AutomationService {
         }
 
         await conversationManager.update(phone, {
-            step: CONVERSATION_STEPS.CONFIRM_BOOKING,
+            step: CONVERSATION_STEPS.SELECT_CLIENT_NAME,
             time,
         });
 
         return {
             success: true,
-            message: "Revisa los datos antes de reservar.",
-            data: {
-                service: context.service.nombre,
-                barber: context.barber.nombre,
-                date: context.date,
-                time,
-                confirmationMessage:
-                    "Escribe CONFIRMAR para finalizar la reserva."
-            }
+            message: "¿A nombre de quién registro la cita? Escríbeme tu nombre y apellido.",
+        };
+    }
+
+    async processSelectClientName(phone, context, message) {
+        const nombre = String(message || '').trim().replace(/\s+/g, ' ');
+        if (nombre.length < 2 || nombre.length > 80 || /\d/.test(nombre)) {
+            return {
+                success: false,
+                message: "Escríbeme tu nombre y apellido (sin números), por favor.",
+            };
+        }
+
+        await conversationManager.update(phone, {
+            step: CONVERSATION_STEPS.CONFIRM_BOOKING,
+            clientName: nombre,
+        });
+
+        return {
+            success: true,
+            message: `Confirma tu reserva:\n👤 ${nombre}\n📞 ${phone}\n💈 ${context.service.nombre}\n✂️ ${context.barber.nombre}\n📅 ${context.date} a las ${context.time}\n\nEscribe *CONFIRMAR* para reservar.`,
         };
     }
 
@@ -259,8 +271,20 @@ class AutomationService {
             };
         }
 
-        const usuario =
-            await usuariosService.obtenerOCrearPorTelefono(phone);
+        if (!context.clientName) {
+            await conversationManager.update(phone, {
+                step: CONVERSATION_STEPS.SELECT_CLIENT_NAME,
+            });
+            return {
+                success: false,
+                message: "Antes de reservar, dime tu nombre y apellido.",
+            };
+        }
+
+        const usuario = await usuariosService.obtenerOCrearDesdeWhatsApp(
+            phone,
+            context.clientName
+        );
 
         try {
             await citasService.agendar({
@@ -348,6 +372,9 @@ class AutomationService {
 
             case CONVERSATION_STEPS.SELECT_TIME:
                 return this.processSelectTime(phone, context, message);
+
+            case CONVERSATION_STEPS.SELECT_CLIENT_NAME:
+                return this.processSelectClientName(phone, context, message);
 
             case CONVERSATION_STEPS.CONFIRM_BOOKING:
                 return this.processConfirmation(

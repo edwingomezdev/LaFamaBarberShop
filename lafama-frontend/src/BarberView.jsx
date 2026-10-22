@@ -448,7 +448,7 @@ if (!barbero) {
           <div className="stats-bar">
             <div className="stat-item">
               <div className="stat-num red">{citasActivas.length}</div>
-              <div className="stat-lbl">Total hoy</div>
+              <div className="stat-lbl">Citas visibles</div>
             </div>
             <div className="stat-item">
               <div className="stat-num gold">{pendientes}</div>
@@ -466,7 +466,7 @@ if (!barbero) {
               <div className="stat-num" style={{ fontSize: 22, color: "var(--verde-claro)" }}>
                 ${ingresos.toLocaleString("es-CO")}
               </div>
-              <div className="stat-lbl">Ingresos del día</div>
+              <div className="stat-lbl">Ingresos registrados</div>
             </div>
           </div>
         )}
@@ -476,7 +476,7 @@ if (!barbero) {
           {activeTab === "citas" && (
             <>
               <div className="content-header">
-                <div className="content-title">Citas de hoy</div>
+              <div className="content-title">Mis citas · hoy y próximas</div>
                 <div className="refresh-info">
                   <span>Actualiza en {30 - Math.floor(refreshProgress * 30 / 100)}s</span>
                   <div className="refresh-bar">
@@ -498,6 +498,7 @@ if (!barbero) {
                   <table className="citas-tabla">
                     <thead>
                       <tr>
+                        <th>Fecha</th>
                         <th>Hora</th>
                         <th>Cliente</th>
                         <th>Servicios</th>
@@ -513,6 +514,7 @@ if (!barbero) {
                         const esNueva = nuevasCitas.has(c.id);
                         return (
                           <tr key={c.id} className={esNueva ? "fila-nueva" : ""}>
+                            <td>{new Date(`${String(c.fecha).slice(0, 10)}T12:00:00`).toLocaleDateString("es-CO", { day: "numeric", month: "short", year: "numeric" })}</td>
                             <td className="td-hora">{c.hora}</td>
                             <td>
                               {c.usuario?.nombre}

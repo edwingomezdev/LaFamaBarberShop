@@ -961,15 +961,18 @@ function Dashboard({ citas, servicios, barberos }) {
 // ── CITAS ──
 function CitasPanel({ citas, onRefresh }) {
   const [filtro, setFiltro] = useState("TODAS");
+  const [errorAccion, setErrorAccion] = useState("");
 
   const filtradas = filtro === "TODAS" ? citas : citas.filter(c => c.estado === filtro);
 
   const cambiarEstado = async (id, estado) => {
+    setErrorAccion("");
     try {
       await apiFetch(`/citas/${id}/estado`, { method: "PUT", body: JSON.stringify({ estado }) });
       onRefresh();
     } catch (error) {
       console.error("No se pudo actualizar la cita:", error);
+      setErrorAccion(error?.error || error?.message || "No se pudo actualizar la cita. Verifica que tu sesión tenga permisos de administrador y vuelve a intentarlo.");
     }
   };
 
@@ -979,6 +982,8 @@ function CitasPanel({ citas, onRefresh }) {
         <div className="section-title">Gestión de Citas</div>
         <span style={{ color: "var(--gris)", fontSize: 13 }}>{filtradas.length} citas</span>
       </div>
+
+      {errorAccion && <div role="alert" style={{ color: "#e74c3c", border: "1px solid rgba(231,76,60,.4)", padding: 12, marginBottom: 16, borderRadius: 6 }}>{errorAccion}</div>}
 
       <div className="filter-bar">
         {["TODAS", "PENDIENTE", "CONFIRMADA", "COMPLETADA", "CANCELADA"].map(f => (

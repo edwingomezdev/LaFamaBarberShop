@@ -37,19 +37,19 @@ router.get('/barbero/:barberoId', verificarBarberoToken, async (req, res) => {
     const ahoraUTC = new Date()
     const ahoraBogota = new Date(ahoraUTC.getTime() - 5 * 60 * 60 * 1000)
     const hoy = new Date(Date.UTC(ahoraBogota.getUTCFullYear(), ahoraBogota.getUTCMonth(), ahoraBogota.getUTCDate()))
-    const manana = new Date(hoy.getTime() + 24 * 60 * 60 * 1000)
-
     const citas = await prisma.cita.findMany({
       where: {
         barberoId: Number(req.params.barberoId),
-        fecha: { gte: hoy, lt: manana },
+        // Mostrar citas desde hoy en adelante para que el barbero pueda
+        // revisar también las reservas futuras recibidas por WhatsApp.
+        fecha: { gte: hoy },
         estado: { not: 'CANCELADA' }
       },
       include: {
         usuario: { select: { nombre: true, telefono: true } },
         servicios: { include: { servicio: true } }
       },
-      orderBy: { hora: 'asc' }
+      orderBy: [{ fecha: 'asc' }, { hora: 'asc' }]
     })
     res.json(citas)
   } catch (e) {
