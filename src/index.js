@@ -128,7 +128,9 @@ app.use(errorHandler)
 // ── Arranque ──────────────────────────────────────────────────────────────────
 const PORT = Number(env.PORT)
 
-app.listen(PORT, () => {
+// Railway y otros contenedores enrutan tráfico desde fuera del proceso;
+// enlazar explícitamente a 0.0.0.0 permite que el proxy alcance Express.
+app.listen(PORT, '0.0.0.0', () => {
   logger.info(`🚀 Servidor corriendo en http://localhost:${PORT}`)
   logger.info(`📖 Documentación en http://localhost:${PORT}/api-docs`)
 
