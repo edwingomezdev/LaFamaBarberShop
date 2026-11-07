@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
-import { FaWhatsapp, FaInstagram, FaPhoneAlt, FaCut } from "react-icons/fa";
+import { FaWhatsapp, FaInstagram, FaMapMarkerAlt, FaCut } from "react-icons/fa";
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import Navbar from "./components/Navbar";
@@ -830,7 +830,7 @@ export default function App() {
 
 
       {/* ── SECCIÓN DIRECCIÓN ── */}
-      {vista === 'home' && <section className="direccion-section">
+      {vista === 'home' && <section id="ubicacion" className="direccion-section">
         <div className="direccion-info">
           <span className="direccion-tag">Encuéntranos</span>
           <h2 className="direccion-title">ESTAMOS<br /><span style={{ color: 'var(--rojo)' }}>UBICADOS</span></h2>
@@ -852,10 +852,10 @@ export default function App() {
           </div>
 
           <div className="direccion-item">
-            <span className="direccion-icon">📞</span>
+            <span className="direccion-icon"><FaWhatsapp /></span>
             <div>
-              <div className="direccion-label">Teléfono</div>
-              <div className="direccion-valor">+57 301 309 0185</div>
+              <div className="direccion-label">WhatsApp</div>
+              <a className="direccion-valor" href="https://wa.me/573013090185" target="_blank" rel="noopener noreferrer">+57 301 309 0185</a>
             </div>
           </div>
         </div>
@@ -952,9 +952,9 @@ export default function App() {
           <FaWhatsapp className="mab-icon" />
           <span className="mab-label">WhatsApp</span>
         </a>
-        <a href="tel:+573013090185" className="mab-item">
-          <FaPhoneAlt className="mab-icon" />
-          <span className="mab-label">Llamar</span>
+        <a href="#ubicacion" className="mab-item mab-location">
+          <FaMapMarkerAlt className="mab-icon" />
+          <span className="mab-label">Ubicación</span>
         </a>
         <button className="mab-item mab-cta" onClick={() => setShowReservaModal(true)}>
           <FaCut className="mab-icon" />

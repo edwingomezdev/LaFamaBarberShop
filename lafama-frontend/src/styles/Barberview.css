@@ -908,9 +908,23 @@
   .btn-allow:hover { background: rgba(212,168,67,0.25); }
 
   @media (max-width: 768px) {
-    .topbar { padding: 0 16px; }
-    .stats-bar { padding: 0 16px; overflow-x: auto; }
-    .content { padding: 20px 16px; }
+    .topbar { height: auto; min-height: 64px; padding: 10px 14px; gap: 8px; flex-wrap: wrap; }
+    .topbar-left { flex: 1 1 100%; min-width: 0; gap: 10px; }
+    .topbar-brand { flex-shrink: 0; font-size: 18px; letter-spacing: 2px; }
+    .topbar-barbero { min-width: 0; flex: 1; }
+    .topbar-barbero-name, .topbar-barbero-esp { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .topbar-right { width: 100%; justify-content: flex-end; gap: 12px; }
+    .topbar-clock { font-size: 20px; }
+    .topbar-date { font-size: 9px; letter-spacing: 1px; }
+    .btn-logout { padding: 7px 12px; }
+    .stats-bar { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); padding: 8px 12px; gap: 6px; }
+    .stat-item { min-width: 0; margin: 0; padding: 10px 12px; border: 1px solid rgba(255,255,255,0.05); }
+    .stat-num { font-size: 26px; }
+    .stat-lbl { font-size: 9px; letter-spacing: 1px; }
+    .content { min-width: 0; padding: 20px 14px; }
+    .content-header { align-items: flex-start; flex-direction: column; gap: 8px; }
+    .content-title { font-size: 20px; }
+    .refresh-info { flex-wrap: wrap; }
     .citas-grid { grid-template-columns: 1fr; }
     .citas-list .cita-card { grid-template-columns: 1fr; }
     .citas-list .cita-card-top { border-right: none; padding-bottom: 0; }
@@ -918,11 +932,25 @@
     .catalogo-grid { grid-template-columns: 1fr; }
     .zoom-viewer { grid-template-columns: 1fr; }
     .zoom-info { border-left: 0; border-top: 1px solid rgba(255,255,255,0.06); }
-    .topbar-clock { font-size: 22px; }
-    .tabs-nav { padding: 0 16px; }
+    .tabs-nav { padding: 0 12px; overflow-x: auto; }
+    .tab-btn { flex: 0 0 auto; padding: 13px 14px; font-size: 11px; letter-spacing: 1px; }
+    .empty-state { padding: 28px 16px; }
+    .empty-icon { font-size: 42px; margin-bottom: 12px; }
+    .empty-title { font-size: 24px; }
+    .empty-sub { line-height: 1.5; }
+    .citas-tabla-wrap { border: 0; background: transparent; overflow: visible; }
     .citas-tabla thead { display: none; }
     .citas-tabla, .citas-tabla tbody, .citas-tabla tr, .citas-tabla td { display: block; width: 100%; }
-    .citas-tabla tbody tr { padding: 14px 16px; border-bottom: 1px solid rgba(255,255,255,0.06); }
-    .citas-tabla tbody td { padding: 4px 0; border-bottom: none; }
+    .citas-tabla tbody tr { margin-bottom: 12px; padding: 12px 14px; background: var(--negro2); border: 1px solid rgba(255,255,255,0.06); }
+    .citas-tabla tbody td { display: grid; grid-template-columns: minmax(76px, 30%) minmax(0, 1fr); gap: 10px; align-items: start; padding: 7px 0; border-bottom: 1px solid rgba(255,255,255,0.04); overflow-wrap: anywhere; }
+    .citas-tabla tbody td::before { content: attr(data-label); color: var(--rojo); font: 600 10px 'Barlow Condensed', sans-serif; letter-spacing: 1px; text-transform: uppercase; }
+    .citas-tabla tbody td:last-child { border-bottom: 0; }
     .citas-tabla tbody td:empty { display: none; }
+  }
+
+  @media (max-width: 380px) {
+    .topbar-left { gap: 8px; }
+    .topbar-divider { display: none; }
+    .topbar-brand { font-size: 16px; }
+    .stat-item { padding: 9px 8px; }
   }

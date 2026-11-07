@@ -3,24 +3,42 @@
   border-top: 1px solid rgba(192,57,43,0.2);
   padding: 40px 60px;
   display: flex; justify-content: space-between; align-items: center;
+  gap: 24px; min-width: 0;
 }
 
-.footer-logo { font-family: 'Bebas Neue', sans-serif; font-size: 24px; letter-spacing: 4px; }
+.footer-logo { font-family: 'Bebas Neue', sans-serif; font-size: 24px; letter-spacing: 4px; transition: text-shadow 0.25s ease; }
 .footer-logo span { color: var(--rojo); }
 .footer-text { font-size: 12px; color: var(--gris); letter-spacing: 1px; }
+.footer-logo:hover, .footer-logo:active { text-shadow: 0 0 10px rgba(212,168,67,0.55); }
+.footer > button { transition: color 0.25s ease, border-color 0.25s ease, text-shadow 0.25s ease; }
+.footer > button:hover, .footer > button:focus-visible, .footer > button:active {
+  color: var(--oro) !important;
+  border-bottom-color: var(--oro) !important;
+  text-shadow: 0 0 8px rgba(212,168,67,0.45);
+}
 
 @media (max-width: 1024px) {
-  .footer { padding: 32px 32px; }
+  .footer { padding: 32px; }
 }
 
 @media (max-width: 768px) {
   .footer {
-    flex-direction: column; gap: 16px; text-align: center;
-    padding: 32px 20px calc(120px + env(safe-area-inset-bottom));
+    width: 100vw;
+    margin-left: calc(50% - 50vw);
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 12px 16px;
+    padding: 24px 20px calc(76px + env(safe-area-inset-bottom));
   }
+  .footer-logo { font-size: 20px; letter-spacing: 3px; }
+  .footer-text { min-width: 0; line-height: 1.5; overflow-wrap: anywhere; }
+  .footer-text:nth-child(2) { grid-column: 1 / -1; text-align: center; }
+  .footer-text:nth-child(3) { grid-column: 2; grid-row: 1; }
+  .footer > button { grid-column: 1 / -1; justify-self: center; }
 }
 
 @media (max-width: 480px) {
-  .footer { padding: 24px 16px calc(120px + env(safe-area-inset-bottom)); gap: 12px; }
-  .footer-logo { font-size: 20px; }
+  .footer { padding-right: 16px; padding-left: 16px; gap: 10px 12px; }
+  .footer-logo { font-size: 18px; letter-spacing: 2px; }
 }

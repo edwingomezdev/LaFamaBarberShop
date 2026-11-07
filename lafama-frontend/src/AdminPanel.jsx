@@ -60,7 +60,7 @@ const styles = `
   ::-webkit-scrollbar-thumb { background: var(--rojo); }
 
   /* LAYOUT */
-  .admin-layout { display: flex; min-height: 100vh; }
+  .admin-layout { display: flex; min-height: 100vh; width: 100%; overflow-x: hidden; }
 
   /* SIDEBAR */
 /*   .sidebar {
@@ -183,6 +183,7 @@ const styles = `
   .main-content {
     margin-left: 260px;
     flex: 1;
+    min-width: 0;
     display: flex;
     flex-direction: column;
     min-height: 100vh;
@@ -214,7 +215,21 @@ const styles = `
     letter-spacing: 1px;
   }
 
-  .page-content { padding: 40px; }
+  .page-content { padding: 40px; min-width: 0; width: 100%; }
+
+  .dashboard-catalog-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 24px;
+    margin-bottom: 32px;
+  }
+  .dashboard-catalog-card {
+    min-width: 0;
+    padding: 24px;
+    background: var(--negro2);
+    border: 1px solid rgba(255,255,255,0.04);
+    overflow-wrap: anywhere;
+  }
 
   /* STATS */
   .stats-grid {
@@ -691,6 +706,8 @@ const styles = `
     .sidebar.sidebar-open { display: flex; }
     .main-content { margin-left: 0; }
     .page-content { padding: 16px; }
+    .dashboard-catalog-grid { gap: 12px; }
+    .dashboard-catalog-card { padding: 16px; }
     .topbar { padding: 0 16px; height: 56px; }
     .topbar-title { font-size: 18px; }
     .topbar-date { display: none; }
@@ -709,6 +726,11 @@ const styles = `
     .stat-value { font-size: 28px; }
     .stat-label { font-size: 9px; }
     .cards-grid { grid-template-columns: 1fr; }
+    .dashboard-catalog-grid { grid-template-columns: 1fr; gap: 12px; }
+    .stat-card { padding: 16px 12px; }
+    .stat-value { font-size: 28px; }
+    .stat-sub { font-size: 10px; }
+    .table-wrap table { min-width: 600px; }
     .modal-actions { flex-direction: column; }
     .btn-full { width: 100%; }
     .topbar-title { font-size: 16px; }
@@ -891,8 +913,8 @@ function Dashboard({ citas, servicios, barberos }) {
         </div>
       </div>
 
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 24, marginBottom: 32 }}>
-        <div style={{ background: "var(--negro2)", border: "1px solid rgba(255,255,255,0.04)", padding: 24 }}>
+      <div className="dashboard-catalog-grid">
+        <div className="dashboard-catalog-card">
           <div className="section-title" style={{ fontSize: 18, marginBottom: 16 }}>Servicios activos</div>
           {servicios.map(s => (
             <div key={s.id} style={{ display: "flex", justifyContent: "space-between", padding: "10px 0", borderBottom: "1px solid rgba(255,255,255,0.04)", fontSize: 13 }}>
@@ -901,7 +923,7 @@ function Dashboard({ citas, servicios, barberos }) {
             </div>
           ))}
         </div>
-        <div style={{ background: "var(--negro2)", border: "1px solid rgba(255,255,255,0.04)", padding: 24 }}>
+        <div className="dashboard-catalog-card">
           <div className="section-title" style={{ fontSize: 18, marginBottom: 16 }}>Barberos activos</div>
           {barberos.map((b, i) => (
             <div key={b.id} style={{ display: "flex", alignItems: "center", gap: 12, padding: "10px 0", borderBottom: "1px solid rgba(255,255,255,0.04)" }}>

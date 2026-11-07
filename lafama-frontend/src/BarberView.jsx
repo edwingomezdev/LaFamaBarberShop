@@ -514,24 +514,24 @@ if (!barbero) {
                         const esNueva = nuevasCitas.has(c.id);
                         return (
                           <tr key={c.id} className={esNueva ? "fila-nueva" : ""}>
-                            <td>{new Date(`${String(c.fecha).slice(0, 10)}T12:00:00`).toLocaleDateString("es-CO", { day: "numeric", month: "short", year: "numeric" })}</td>
-                            <td className="td-hora">{c.hora}</td>
-                            <td>
+                            <td data-label="Fecha">{new Date(`${String(c.fecha).slice(0, 10)}T12:00:00`).toLocaleDateString("es-CO", { day: "numeric", month: "short", year: "numeric" })}</td>
+                            <td data-label="Hora" className="td-hora">{c.hora}</td>
+                            <td data-label="Cliente">
                               {c.usuario?.nombre}
                               {esNueva && <span className="badge-nueva" style={{ marginLeft: 8 }}>● Nueva</span>}
                               {c.nota && <div className="td-sub">📝 {c.nota}</div>}
                             </td>
-                            <td>
+                            <td data-label="Servicios">
                               <div className="td-servicios-tags">
                                 {c.servicios?.map(s => (
                                   <span key={s.servicio?.id} className="servicio-tag">{s.servicio?.nombre}</span>
                                 ))}
                               </div>
                             </td>
-                            <td>{c.usuario?.telefono ? <>📞 {c.usuario.telefono}</> : "—"}</td>
-                            <td className="td-total">${total?.toLocaleString("es-CO")}</td>
-                            <td><span className={`badge badge-${c.estado}`}>{c.estado}</span></td>
-                            <td>
+                            <td data-label="Contacto">{c.usuario?.telefono ? <>📞 {c.usuario.telefono}</> : "—"}</td>
+                            <td data-label="Total" className="td-total">${total?.toLocaleString("es-CO")}</td>
+                            <td data-label="Estado"><span className={`badge badge-${c.estado}`}>{c.estado}</span></td>
+                            <td data-label="Acción">
                               {c.estado === "PENDIENTE" && (
                                 <button className="btn-action btn-completar" onClick={() => cambiarEstado(c.id, "CONFIRMADA")}>Confirmar</button>
                               )}

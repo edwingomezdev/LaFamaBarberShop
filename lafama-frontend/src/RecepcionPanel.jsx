@@ -579,8 +579,9 @@ function LoginRecepcion({ onLogin }) {
 }
 
 const estilos = `
-  :root { --rojo: #c0392b; --negro: #0d0d0d; --negro2: #161616; --negro3: #1e1e1e; --blanco: #f5f5f5; --gris: #666; }
-  .rp-layout { min-height: 100vh; background: var(--negro); color: var(--blanco); font-family: 'Oswald', sans-serif; }
+  :root { --rojo: #c0392b; --rojo-vivo: #e74c3c; --negro: #060606; --negro2: #0f0f0f; --negro3: #181818; --blanco: #f0ece4; --gris: #555; --gris2: #333; --oro: #d4a843; --verde: #27ae60; --verde-claro: #2ecc71; --azul: #2980b9; }
+  .rp-layout, .rp-login-page { min-height: 100vh; width: 100%; overflow-x: hidden; background: var(--negro); color: var(--blanco); font-family: 'Barlow', sans-serif; }
+  .rp-layout button, .rp-layout input, .rp-layout select, .rp-login-page button, .rp-login-page input { font: inherit; }
 
   .rp-topbar { display: flex; justify-content: space-between; align-items: center; padding: 0 28px; height: 68px;
     background: linear-gradient(120deg, var(--negro2) 0%, #200a08 100%); border-bottom: 1px solid rgba(192,57,43,0.25); }
@@ -592,18 +593,20 @@ const estilos = `
   .rp-usuario { display: flex; align-items: center; gap: 8px; }
   .rp-usuario-avatar { width: 30px; height: 30px; border-radius: 50%; background: var(--rojo); display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 700; }
   .rp-usuario-nombre { font-size: 12px; letter-spacing: 0.5px; color: rgba(255,255,255,0.85); }
-  .rp-logout { background: none; border: 1px solid rgba(192,57,43,0.4); color: var(--blanco); padding: 8px 18px; font-size: 11px; letter-spacing: 1px; cursor: pointer; }
+  .rp-logout { background: none; border: 1px solid rgba(192,57,43,0.4); color: var(--blanco); padding: 8px 18px; font-family: 'Barlow Condensed', sans-serif !important; font-size: 12px; letter-spacing: 1.5px; cursor: pointer; transition: border-color .2s, color .2s; }
+  .rp-logout:hover { border-color: var(--rojo); color: var(--rojo); }
 
   .rp-stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1px; background: rgba(255,255,255,0.06); border-bottom: 1px solid rgba(255,255,255,0.06); }
   .rp-stat { background: var(--negro2); padding: 16px 24px; display: flex; flex-direction: column; gap: 4px; }
-  .rp-stat-label { font-size: 10px; letter-spacing: 1.5px; text-transform: uppercase; color: rgba(255,255,255,0.5); }
+  .rp-stat-label { font-family: 'Barlow Condensed', sans-serif; font-size: 10px; letter-spacing: 2px; text-transform: uppercase; color: rgba(255,255,255,0.5); }
   .rp-stat-value { font-family: 'Bebas Neue', sans-serif; font-size: 28px; letter-spacing: 1px; }
   .rp-stat-warn { color: #d4a843; }
   .rp-stat-ok { color: #27ae60; }
 
-  .rp-tabs { display: flex; gap: 8px; padding: 16px 28px; overflow-x: auto; align-items: center; }
-  .rp-tab { background: var(--negro2); border: 1px solid rgba(255,255,255,0.08); color: var(--blanco); padding: 10px 20px; font-size: 12px; letter-spacing: 1px; cursor: pointer; white-space: nowrap; display: flex; align-items: center; gap: 8px; }
-  .rp-tab.active { border-color: var(--rojo); color: var(--rojo); }
+  .rp-tabs { display: flex; gap: 8px; padding: 16px 28px; overflow-x: auto; align-items: center; border-bottom: 1px solid rgba(255,255,255,0.06); }
+  .rp-tab { background: var(--negro2); border: 1px solid rgba(255,255,255,0.08); color: var(--blanco); padding: 10px 20px; font-family: 'Barlow Condensed', sans-serif !important; font-size: 13px; letter-spacing: 1.2px; text-transform: uppercase; cursor: pointer; white-space: nowrap; display: flex; align-items: center; gap: 8px; transition: border-color .2s, color .2s, background .2s; }
+  .rp-tab:hover { border-color: rgba(192,57,43,0.45); }
+  .rp-tab.active { border-color: var(--rojo); color: var(--rojo); background: rgba(192,57,43,0.08); }
   .rp-badge { background: var(--rojo); color: var(--blanco); border-radius: 50%; width: 20px; height: 20px; display: flex; align-items: center; justify-content: center; font-size: 10px; }
   .rp-btn-walkin { margin-left: auto; }
 
@@ -620,14 +623,14 @@ const estilos = `
   .rp-barbero-nombre { font-size: 14px; letter-spacing: 0.5px; }
   .rp-barbero-especialidad { font-size: 11px; color: rgba(255,255,255,0.5); }
   .rp-barbero-count { margin-left: auto; font-size: 11px; color: rgba(255,255,255,0.5); }
-  .rp-tabla { width: 100%; border-collapse: collapse; font-size: 13px; }
-  .rp-tabla th { text-align: left; padding: 10px 18px; font-size: 10px; letter-spacing: 1px; text-transform: uppercase; color: rgba(255,255,255,0.4); border-bottom: 1px solid rgba(255,255,255,0.06); }
+  .rp-tabla { width: 100%; border-collapse: collapse; font-family: 'Barlow', sans-serif; font-size: 13px; }
+  .rp-tabla th { text-align: left; padding: 10px 18px; font-family: 'Barlow Condensed', sans-serif; font-size: 11px; letter-spacing: 1.5px; text-transform: uppercase; color: var(--rojo); background: var(--negro3); border-bottom: 1px solid rgba(192,57,43,0.2); }
   .rp-tabla td { padding: 12px 18px; border-bottom: 1px solid rgba(255,255,255,0.04); vertical-align: top; }
   .rp-tabla tr:last-child td { border-bottom: none; }
   .rp-td-sub { font-size: 11px; color: rgba(255,255,255,0.45); margin-top: 2px; }
   .rp-td-hora { font-family: 'Bebas Neue', sans-serif; font-size: 16px; letter-spacing: 1px; white-space: nowrap; }
   .rp-td-servicios { color: rgba(255,255,255,0.75); max-width: 220px; }
-  .rp-btn-mini { background: none; border: 1px solid rgba(52,152,219,0.5); color: #3498db; padding: 6px 12px; font-size: 10px; letter-spacing: 0.5px; cursor: pointer; }
+  .rp-btn-mini { background: none; border: 1px solid rgba(52,152,219,0.5); color: #3498db; padding: 6px 12px; font-family: 'Barlow Condensed', sans-serif !important; font-size: 11px; letter-spacing: 0.7px; text-transform: uppercase; cursor: pointer; }
   .rp-btn-mini-ok { border-color: rgba(39,174,96,0.5); color: #27ae60; }
   .rp-btn-mini:disabled { opacity: 0.4; cursor: not-allowed; }
 
@@ -644,8 +647,10 @@ const estilos = `
   .rp-servicio-check { display: flex; align-items: center; gap: 8px; font-size: 12px; }
   .rp-servicios { list-style: none; padding: 0; margin: 0; font-size: 12px; color: rgba(255,255,255,0.7); display: flex; flex-direction: column; gap: 4px; }
   .rp-total { font-size: 20px; font-weight: 700; }
-  .rp-btn-cobrar { background: var(--rojo); color: var(--blanco); border: none; padding: 10px 16px; font-size: 12px; letter-spacing: 1px; cursor: pointer; }
-  .rp-btn-secundario { background: none; border: 1px solid rgba(255,255,255,0.2); color: var(--blanco); padding: 10px 16px; font-size: 12px; cursor: pointer; }
+  .rp-btn-cobrar { background: var(--rojo); color: var(--blanco); border: none; padding: 10px 16px; font-family: 'Barlow Condensed', sans-serif !important; font-size: 13px; letter-spacing: 1.2px; text-transform: uppercase; cursor: pointer; transition: background .2s, transform .2s; }
+  .rp-btn-cobrar:hover { background: var(--rojo-vivo); transform: translateY(-1px); }
+  .rp-btn-secundario { background: none; border: 1px solid rgba(255,255,255,0.2); color: var(--blanco); padding: 10px 16px; font-family: 'Barlow Condensed', sans-serif !important; font-size: 13px; letter-spacing: 1px; text-transform: uppercase; cursor: pointer; transition: border-color .2s, color .2s; }
+  .rp-btn-secundario:hover { border-color: var(--oro); color: var(--oro); }
   .rp-productos-layout { display: grid; grid-template-columns: 1fr 300px; gap: 20px; }
   .rp-productos-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 12px; align-content: start; }
   .rp-producto-card { background: var(--negro2); border: 1px solid rgba(255,255,255,0.08); padding: 14px; display: flex; flex-direction: column; gap: 6px; color: var(--blanco); cursor: pointer; text-align: left; }
@@ -672,7 +677,7 @@ const estilos = `
   .rp-modal-actions { display: flex; gap: 10px; justify-content: flex-end; }
   .rp-toast { position: fixed; bottom: 20px; right: 20px; background: var(--negro2); border-left: 4px solid var(--rojo); padding: 14px 20px; font-size: 13px; z-index: 300; }
   .rp-toast.error { border-left-color: #e74c3c; }
-  .rp-login-page { min-height: 100vh; display: flex; align-items: center; justify-content: center; background: var(--negro); position: relative; }
+  .rp-login-page { display: flex; align-items: center; justify-content: center; position: relative; }
   .rp-login-bg { position: absolute; inset: 0; background: radial-gradient(ellipse 60% 60% at 50% 50%, rgba(192,57,43,0.08) 0%, transparent 70%); }
   .rp-login-box { background: var(--negro2); border: 1px solid rgba(192,57,43,0.2); padding: 52px 48px; width: 90%; max-width: 420px; position: relative; z-index: 2; }
   .rp-login-logo { font-family: 'Bebas Neue', sans-serif; font-size: 32px; letter-spacing: 3px; margin-bottom: 4px; }
@@ -680,24 +685,44 @@ const estilos = `
   .rp-login-tag { font-family: 'Oswald', sans-serif; font-size: 10px; letter-spacing: 4px; text-transform: uppercase; color: var(--rojo); margin-bottom: 32px; }
   .rp-login-title { font-family: 'Bebas Neue', sans-serif; font-size: 28px; letter-spacing: 2px; margin-bottom: 6px; }
   .rp-login-sub { color: var(--gris); font-size: 13px; margin-bottom: 28px; font-weight: 300; }
-  .rp-field-label { font-family: 'Oswald', sans-serif; font-size: 10px; letter-spacing: 3px; text-transform: uppercase; color: var(--rojo); margin-bottom: 8px; display: block; margin-top: 16px; }
+  .rp-field-label { font-family: 'Barlow Condensed', sans-serif; font-size: 11px; letter-spacing: 2.5px; text-transform: uppercase; color: var(--rojo); margin-bottom: 8px; display: block; margin-top: 16px; }
   .rp-field-label:first-of-type { margin-top: 0; }
-  .rp-login-input { width: 100%; background: var(--negro); border: 1px solid rgba(255,255,255,0.08); color: var(--blanco); padding: 12px 14px; font-family: 'Oswald', sans-serif; font-size: 14px; outline: none; transition: border-color 0.2s; margin-bottom: 4px; }
+  .rp-login-input { width: 100%; background: var(--negro); border: 1px solid rgba(255,255,255,0.08); color: var(--blanco); padding: 12px 14px; font-family: 'Barlow', sans-serif; font-size: 14px; outline: none; transition: border-color 0.2s; margin-bottom: 4px; }
   .rp-login-input:focus { border-color: var(--rojo); }
   .rp-login-input::placeholder { color: rgba(255,255,255,0.2); }
-  .rp-login-back { display: block; width: 100%; text-align: center; margin-top: 16px; font-size: 11px; letter-spacing: 3px; text-transform: uppercase; color: var(--gris); background: none; border: none; cursor: pointer; font-family: 'Oswald', sans-serif; padding: 8px 0; }
+  .rp-login-back { display: block; width: 100%; text-align: center; margin-top: 16px; font-size: 11px; letter-spacing: 2px; text-transform: uppercase; color: var(--gris); background: none; border: none; cursor: pointer; font-family: 'Barlow Condensed', sans-serif !important; padding: 8px 0; }
   .rp-login-back:hover { color: var(--blanco); }
 
   @media (max-width: 900px) {
     .rp-stats { grid-template-columns: 1fr 1fr; }
   }
   @media (max-width: 768px) {
-    .rp-productos-layout { grid-template-columns: 1fr; }
+    .rp-productos-layout { grid-template-columns: minmax(0, 1fr); }
     .rp-caja-desglose { grid-template-columns: 1fr; }
-    .rp-topbar { padding: 0 16px; }
-    .rp-content { padding: 16px; }
-    .rp-tabla { font-size: 12px; }
+    .rp-topbar { height: auto; min-height: 64px; padding: 12px 14px; flex-wrap: wrap; gap: 10px; }
+    .rp-brand-wrap { flex: 1 1 100%; min-width: 0; gap: 8px; }
+    .rp-brand { font-size: 18px; letter-spacing: 1.5px; }
+    .rp-topbar-right { width: 100%; justify-content: flex-end; }
+    .rp-content { padding: 16px 12px; min-width: 0; }
+    .rp-tabs { flex-wrap: wrap; padding: 12px; gap: 8px; }
+    .rp-tab { flex: 1 1 calc(50% - 8px); min-width: 0; justify-content: center; padding: 10px 8px; font-size: 11px; white-space: normal; text-align: center; }
+    .rp-btn-walkin { flex: 1 1 100%; width: 100%; margin: 0; }
+    .rp-agenda-toolbar { flex-wrap: wrap; }
+    .rp-agenda-toolbar label { flex: 1 1 100%; }
+    .rp-agenda-toolbar input[type="date"] { flex: 1; min-width: 0; }
+    .rp-barbero-block { overflow-x: auto; }
+    .rp-tabla { min-width: 680px; font-size: 12px; }
     .rp-tabla th, .rp-tabla td { padding: 8px 10px; }
+    .rp-grid, .rp-productos-grid { grid-template-columns: minmax(0, 1fr); }
     .rp-usuario-nombre { display: none; }
+  }
+  @media (max-width: 380px) {
+    .rp-stats { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .rp-stat { padding: 12px 10px; }
+    .rp-stat-label { font-size: 9px; letter-spacing: 1px; }
+    .rp-stat-value { font-size: 24px; }
+    .rp-brand { font-size: 16px; }
+    .rp-modal { padding: 20px 14px; }
+    .rp-extra-row { grid-template-columns: minmax(0, 1fr) 80px 28px; }
   }
 `;

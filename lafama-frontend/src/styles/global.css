@@ -215,10 +215,14 @@ textarea.input {
   font-size: 26px;
 }
 
-.whatsapp-float:hover { background: #25D366; border-color: #25D366; transform: scale(1.1); }
-.instagram-float:hover {
-  background: radial-gradient(circle at 30% 110%, #f09433 0%, #e6683c 25%, #dc2743 50%, #cc2366 75%, #bc1888 100%);
-  transform: scale(1.1);
+.whatsapp-float:hover, .instagram-float:hover,
+.whatsapp-float:focus-visible, .instagram-float:focus-visible,
+.whatsapp-float:active, .instagram-float:active {
+  background: var(--negro2);
+  border-color: var(--oro);
+  color: var(--oro);
+  box-shadow: 0 0 10px rgba(212,168,67,0.5), 0 10px 25px rgba(0,0,0,0.4);
+  transform: scale(1.08);
 }
 
 @media (max-width: 480px) {

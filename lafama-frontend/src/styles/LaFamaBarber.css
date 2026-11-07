@@ -860,7 +860,6 @@
     .booking-grid { gap: 40px; }
     .servicios-grid { grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); }
     .barberos-grid { grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); }
-    .footer { padding: 32px 32px; }
   }
 
   /* Tablet */
@@ -913,9 +912,6 @@
     /* Citas */
     .citas-grid { grid-template-columns: 1fr; }
 
-    /* Footer */
-    .footer { flex-direction: column; gap: 16px; text-align: center; padding: 32px 20px calc(120px + env(safe-area-inset-bottom)); }
-
     /* Toast */
     .toast { bottom: 80px; right: 16px; left: 16px; max-width: none; }
   }
@@ -965,9 +961,6 @@
     .modal { padding: 24px 16px; }
     .modal-title { font-size: 26px; }
 
-    /* Footer */
-    .footer { padding: 24px 16px calc(120px + env(safe-area-inset-bottom)); gap: 12px; }
-    .footer-logo { font-size: 20px; }
   }
 
   /* Móvil pequeño */
@@ -1152,12 +1145,28 @@
       color: var(--gris);
       text-decoration: none;
       font-family: 'Oswald', sans-serif;
+      transition: color 0.2s ease, filter 0.2s ease;
     }
     .mab-icon { font-size: 19px; }
     .mab-label { font-size: 9px; letter-spacing: 1px; text-transform: uppercase; }
 
-    .mab-whatsapp .mab-icon { color: #25D366; }
-    .mab-instagram .mab-icon { color: #E1306C; }
+    .mab-whatsapp .mab-icon,
+    .mab-instagram .mab-icon { color: var(--gris); }
+    .mab-whatsapp:hover .mab-icon,
+    .mab-instagram:hover .mab-icon,
+    .mab-whatsapp:focus-visible .mab-icon,
+    .mab-instagram:focus-visible .mab-icon,
+    .mab-whatsapp:active .mab-icon,
+    .mab-instagram:active .mab-icon,
+    .mab-location:hover .mab-icon,
+    .mab-location:focus-visible .mab-icon,
+    .mab-location:active .mab-icon,
+    .mab-cta:hover .mab-icon,
+    .mab-cta:focus-visible .mab-icon,
+    .mab-cta:active .mab-icon { color: var(--oro); filter: drop-shadow(0 0 5px rgba(212,168,67,0.7)); }
+    .mab-item:hover .mab-label,
+    .mab-item:focus-visible .mab-label,
+    .mab-item:active .mab-label { color: var(--oro); text-shadow: 0 0 7px rgba(212,168,67,0.45); }
     .mab-cta, .mab-cta .mab-icon { color: var(--rojo); }
   }
 
