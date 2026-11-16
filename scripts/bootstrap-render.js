@@ -26,6 +26,7 @@ async function main() {
 
   const email = process.env.BOOTSTRAP_ADMIN_EMAIL?.trim().toLowerCase()
   const password = process.env.BOOTSTRAP_ADMIN_PASSWORD
+  const resetAdmin = process.env.BOOTSTRAP_ADMIN_RESET === 'true'
   if (!email || !password) {
     console.log('Catálogo inicial listo. Se omitió crear administrador: faltan las variables BOOTSTRAP_ADMIN_EMAIL y BOOTSTRAP_ADMIN_PASSWORD.')
     return
@@ -37,6 +38,15 @@ async function main() {
 
   const existing = await prisma.usuario.findUnique({ where: { email } })
   if (existing) {
+    if (resetAdmin) {
+      const hashedPassword = await bcrypt.hash(password, 12)
+      await prisma.usuario.update({
+        where: { id: existing.id },
+        data: { password: hashedPassword, rol: 'ADMIN' },
+      })
+      console.log('Cuenta administradora actualizada para el correo configurado.')
+      return
+    }
     if (existing.rol !== 'ADMIN') {
       console.warn('La cuenta indicada ya existe en Render con un rol distinto de ADMIN; no se cambió su rol.')
     } else {
