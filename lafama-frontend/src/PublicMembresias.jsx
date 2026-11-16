@@ -50,7 +50,7 @@ export default function PublicMembresias() {
       <Footer />
 
       <div className="floating-actions">
-        <a href="https://www.instagram.com/TU_USUARIO" target="_blank" rel="noopener noreferrer" className="instagram-float">
+        <a href="https://www.instagram.com/lafamabarbergr" target="_blank" rel="noopener noreferrer" className="instagram-float">
           <FaInstagram />
         </a>
         <a href="https://wa.me/573013090185?text=Hola%20quiero%20saber%20de%20las%20membres%C3%ADas" target="_blank" rel="noopener noreferrer" className="whatsapp-float">

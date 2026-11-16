@@ -966,7 +966,7 @@ export default function App() {
       {/* Botones flotantes: WhatsApp + Instagram en un solo contenedor fijo */}
       <div className="floating-actions">
         <a
-          href="https://www.instagram.com/TU_USUARIO"
+          href="https://www.instagram.com/lafamabarbergr"
           target="_blank"
           rel="noopener noreferrer"
           className="instagram-float"
@@ -985,7 +985,7 @@ export default function App() {
       </div>
 
       <div className="mobile-action-bar">
-        <a href="https://www.instagram.com/TU_USUARIO" target="_blank" rel="noopener noreferrer" className="mab-item mab-instagram">
+        <a href="https://www.instagram.com/lafamabarbergr" target="_blank" rel="noopener noreferrer" className="mab-item mab-instagram">
           <FaInstagram className="mab-icon" />
           <span className="mab-label">Instagram</span>
         </a>
