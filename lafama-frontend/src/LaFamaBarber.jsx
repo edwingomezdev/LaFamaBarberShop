@@ -926,7 +926,7 @@ export default function App() {
           <div className="confirm-modal" onClick={e => e.stopPropagation()}>
             <div className="confirm-icon">✓</div>
             <div className="confirm-title">{confirmData.estado === 'CONFIRMADA' ? '¡CITA CONFIRMADA!' : 'SOLICITUD REGISTRADA'}</div>
-            <div className="confirm-sub">{confirmData.estado === 'CONFIRMADA' ? 'Te esperamos en La Fama Barber. Llega 5 min antes.' : 'La barbería revisará tu solicitud y confirmará la cita. Puedes ver su estado en Mis citas.'}</div>
+            <div className="confirm-sub">{confirmData.estado === 'CONFIRMADA' ? 'Te esperamos en La Fama Barber. Llega 5 min antes.' : 'La cita queda pendiente de revisión. Si el equipo no alcanza a confirmarla, se confirmará automáticamente al cumplir 15 minutos. Puedes revisar el estado en Mis citas.'}</div>
             <div className="confirm-details">
               <div className="confirm-row"><span className="confirm-row-key">Servicios</span><span className="confirm-row-val">{confirmData.servicios?.map(s => s.servicio?.nombre).join(', ')}</span></div>
               <div className="confirm-row"><span className="confirm-row-key">Barbero</span><span className="confirm-row-val">{confirmData.barbero?.nombre}</span></div>

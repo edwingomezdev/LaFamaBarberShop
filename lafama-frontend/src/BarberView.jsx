@@ -236,6 +236,7 @@ export default function BarberView() {
   const [refreshProgress, setRefreshProgress] = useState(0);
   const [activeTab, setActiveTab] = useState("citas");
   const prevCitasRef = useRef([]);
+  const prevUpcomingCitasRef = useRef([]);
   const intervalRef = useRef(null);
   const progressRef = useRef(null);
 
@@ -245,9 +246,9 @@ export default function BarberView() {
     return () => clearInterval(t);
   }, []);
 
-  const addToast = (cita) => {
+  const addToast = (cita, title = "✂ Nueva cita") => {
     const id = Date.now();
-    setToasts(prev => [...prev, { id, cita }]);
+    setToasts(prev => [...prev, { id, cita, title }]);
     setTimeout(() => setToasts(prev => prev.filter(t => t.id !== id)), 6000);
   };
 
@@ -260,11 +261,19 @@ export default function BarberView() {
       if (servicioAgendaId) params.set("servicioId", servicioAgendaId);
       const data = await apiFetch(`/citas/barbero/${barberoId}/agenda?${params.toString()}`);
       const citasDelDia = data.citas || [];
+      let proximasCitas = [];
+      try {
+        // También consulta fechas futuras para avisar si la cita no es del día abierto.
+        proximasCitas = await apiFetch(`/citas/barbero/${barberoId}`);
+      } catch {
+        // La agenda del día sigue funcionando aunque falle la consulta de avisos.
+      }
 
       // Detectar citas nuevas
-      if (!isFirst && prevCitasRef.current.length > 0) {
-        const prevIds = new Set(prevCitasRef.current.map(c => c.id));
-        const nuevas = citasDelDia.filter(c => !prevIds.has(c.id));
+      if (!isFirst && prevUpcomingCitasRef.current.length > 0) {
+        const prevById = new Map(prevUpcomingCitasRef.current.map(c => [c.id, c]));
+        const nuevas = proximasCitas.filter(c => !prevById.has(c.id));
+        const confirmadas = proximasCitas.filter(c => prevById.get(c.id)?.estado === "PENDIENTE" && c.estado === "CONFIRMADA");
 
         if (nuevas.length > 0) {
           playNotificationSound();
@@ -286,8 +295,19 @@ export default function BarberView() {
             }, 10000);
           });
         }
+
+        confirmadas.forEach(c => {
+          addToast(c, "✓ Cita confirmada");
+          if (Notification.permission === "granted") {
+            new Notification("✓ Cita confirmada — La Fama Barber", {
+              body: `${c.usuario?.nombre} · ${c.hora} · la cita quedó confirmada.`,
+              icon: "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>✂️</text></svg>"
+            });
+          }
+        });
       }
 
+      prevUpcomingCitasRef.current = proximasCitas;
       prevCitasRef.current = citasDelDia;
       setAgenda(data);
       setCitas(citasDelDia);
@@ -684,7 +704,7 @@ if (!barbero) {
         {toasts.map(t => (
           <div key={t.id} className="toast">
             <div className="toast-header">
-              <span className="toast-title">✂ Nueva cita</span>
+              <span className="toast-title">{t.title}</span>
               <button className="toast-close" onClick={() => removeToast(t.id)}>✕</button>
             </div>
             <div className="toast-body">{t.cita.usuario?.nombre}</div>

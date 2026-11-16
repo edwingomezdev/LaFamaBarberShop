@@ -36,6 +36,7 @@ const configuracionRoutes = require('./routes/configuracion.routes')
 const calendarRoutes = require('./routes/calendar.routes')
 const googleCalendar = require('./services/googleCalendar.service')
 const enviarRecordatoriosCitas = require('./jobs/recordatoriosCitas.job')
+const autoConfirmarCitasPendientes = require('./jobs/autoConfirmarCitas.job')
 
 
 
@@ -165,6 +166,21 @@ app.listen(PORT, '0.0.0.0', () => {
   }
   runAppointmentJobs()
   setInterval(runAppointmentJobs, 5 * 60 * 1000)
+
+  let autoConfirmationRunning = false
+  const runAutoConfirmation = async () => {
+    if (autoConfirmationRunning) return
+    autoConfirmationRunning = true
+    try {
+      await autoConfirmarCitasPendientes()
+    } catch (error) {
+      logger.error({ err: error }, 'Error confirmando citas pendientes automáticamente')
+    } finally {
+      autoConfirmationRunning = false
+    }
+  }
+  runAutoConfirmation()
+  setInterval(runAutoConfirmation, 60 * 1000)
 })
 
 // ── Manejo de errores no capturados ──────────────────────────────────────────
