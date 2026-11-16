@@ -73,7 +73,8 @@ class AvailabilityEngine {
     async getAvailableSlots(
         barberoId,
         fecha,
-        duracion
+        duracion,
+        options = {}
     ) {
         // No ofrecer fechas pasadas ni aceptar fechas de calendario inválidas.
         if (!dateParser.isValid(fecha) || fecha < dateParser.todayBogota()) return [];
@@ -91,10 +92,17 @@ class AvailabilityEngine {
             return [];
         }
 
+        const diaSemana = new Date(`${fecha}T00:00:00.000Z`).getUTCDay();
+        const horario = await prisma.horarioAtencion.findUnique({ where: { diaSemana } });
+        const horaApertura = horario?.horaApertura || "09:00";
+        const horaCierre = horario?.horaCierre || (diaSemana === 0 ? "16:00" : "21:00");
+        if (horario && !horario.abierto) return [];
+
         const appointments =
             await appointmentsRepository.getAppointments(
                 barberoId,
-                fecha
+                fecha,
+                options.excludeAppointmentId
             );
 
         console.log(
@@ -120,10 +128,10 @@ class AvailabilityEngine {
         const slots = [];
 
         const start =
-            timeHelper.toMinutes("09:00");
+            timeHelper.toMinutes(horaApertura);
 
         const end =
-            timeHelper.toMinutes("21:00");
+            timeHelper.toMinutes(horaCierre);
 
                const ahoraBogota = new Date(Date.now() - 5 * 60 * 60 * 1000);
         const fechaSolicitada = new Date(fecha);
@@ -152,7 +160,9 @@ class AvailabilityEngine {
                 );
             }
 
-            current += duracion;
+            current += Number(options.stepMinutes) > 0
+                ? Number(options.stepMinutes)
+                : duracion;
         }
 
         return slots;

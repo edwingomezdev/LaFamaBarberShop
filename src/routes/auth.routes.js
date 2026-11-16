@@ -73,6 +73,7 @@ module.exports = router
 
 
 const passport = require('../config/passport')
+const { getAppBaseUrl } = require('../config/publicUrls')
 
 // Google OAuth
 router.get('/google',
@@ -88,10 +89,10 @@ router.get('/google/callback',
     if (!passport.googleOAuthEnabled) return res.status(503).json({ error: 'El inicio con Google no está configurado' })
     next()
   },
-  passport.authenticate('google', { session: false, failureRedirect: `${(process.env.FRONTEND_URL || '').replace(/\/$/, '')}/login?error=true` }),
+  passport.authenticate('google', { session: false, failureRedirect: `${getAppBaseUrl() || ''}/login?error=true` }),
   (req, res) => {
     const { token, usuario } = req.user
-    res.redirect(`${process.env.FRONTEND_URL || '/'}?token=${token}&usuario=${encodeURIComponent(JSON.stringify(usuario))}`)
+    res.redirect(`${getAppBaseUrl() || '/'}?token=${token}&usuario=${encodeURIComponent(JSON.stringify(usuario))}`)
   }
 )
 

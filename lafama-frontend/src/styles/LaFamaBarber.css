@@ -804,12 +804,21 @@
   .cita-item-detalle { font-size: 12px; color: var(--gris); font-weight: 300; white-space: nowrap; }
   .cita-item-cancelar { flex-shrink: 0; background: none; border: 1px solid rgba(192,57,43,0.3); color: var(--rojo); padding: 6px 14px; font-family: 'Oswald', sans-serif; font-size: 9px; letter-spacing: 2px; text-transform: uppercase; cursor: pointer; transition: all 0.2s; }
   .cita-item-cancelar:hover { background: rgba(192,57,43,0.1); }
+  .cita-item-acciones { display: flex; gap: 8px; margin-left: auto; }
+  .cita-item-cambiar { flex-shrink: 0; background: none; border: 1px solid rgba(212,168,67,0.38); color: var(--oro); padding: 6px 12px; font-family: 'Oswald', sans-serif; font-size: 9px; letter-spacing: 1.5px; text-transform: uppercase; cursor: pointer; }
+  .cita-reprogramar { flex: 1 0 100%; display: flex; flex-wrap: wrap; align-items: center; gap: 8px; padding: 12px; border: 1px solid rgba(212,168,67,0.18); background: rgba(212,168,67,0.035); }
+  .cita-reprogramar label { display: flex; align-items: center; gap: 8px; color: var(--gris); font-size: 11px; }
+  .cita-reprogramar input { background: var(--negro2); color: var(--blanco); border: 1px solid rgba(255,255,255,0.12); padding: 7px; }
+  .cita-reprogramar button { background: var(--negro3); border: 1px solid rgba(212,168,67,0.35); color: var(--oro); padding: 7px 10px; cursor: pointer; }
 
   @media (max-width: 600px) {
     .cita-grupo-header { padding: 14px 16px; }
     .cita-item { padding: 12px 16px; gap: 10px; }
     .cita-item-info { min-width: 100%; order: 2; }
     .cita-item-cancelar { order: 3; width: 100%; text-align: center; }
+    .cita-item-acciones { order: 3; width: 100%; margin: 0; }
+    .cita-item-acciones button { flex: 1; }
+    .cita-reprogramar { order: 4; }
   }
 
   .toast { position: fixed; bottom: 32px; right: 32px; background: var(--negro2); border: 1px solid; padding: 16px 24px; z-index: 500; font-size: 13px; letter-spacing: 1px; animation: slideUp 0.3s ease; max-width: 320px; }

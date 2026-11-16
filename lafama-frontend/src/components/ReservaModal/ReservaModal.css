@@ -200,3 +200,5 @@
   .rm-body { padding: 18px; }
   .times-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 }
+.rm-reminder-consent { display: flex; align-items: flex-start; gap: 10px; margin-top: 16px; color: var(--gris, #888); font-size: 13px; line-height: 1.5; cursor: pointer; }
+.rm-reminder-consent input { margin-top: 3px; accent-color: var(--oro, #d4a843); flex: 0 0 auto; }

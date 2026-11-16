@@ -8,28 +8,29 @@ datasource db {
 }
 
 model Usuario {
-  id         Int                @id @default(autoincrement())
-  nombre     String
-  email      String             @unique
-  password   String
-  telefono   String?
-  rol        Rol                @default(CLIENTE)
-  createdAt  DateTime           @default(now())
-  citas      Cita[]
-  membresias UsuarioMembresia[]
-  ventasCobradas Venta[]
+  id                          Int                @id @default(autoincrement())
+  nombre                      String
+  email                       String             @unique
+  password                    String
+  telefono                    String?
+  aceptaRecordatoriosWhatsapp Boolean            @default(false)
+  rol                         Rol                @default(CLIENTE)
+  createdAt                   DateTime           @default(now())
+  citas                       Cita[]
+  membresias                  UsuarioMembresia[]
+  ventasCobradas              Venta[]
 }
 
 model Barbero {
-  id           Int      @id @default(autoincrement())
+  id           Int           @id @default(autoincrement())
   nombre       String
   especialidad String
   foto         String?
-  activo       Boolean  @default(true)
-  createdAt    DateTime @default(now())
+  activo       Boolean       @default(true)
+  createdAt    DateTime      @default(now())
   pin          String?
   descripcion  String?
-  orden        Int      @default(0)
+  orden        Int           @default(0)
   citas        Cita[]
   ventas       Venta[]
   diasDescanso DiaDescanso[]
@@ -100,18 +101,27 @@ model EstiloCorte {
 }
 
 model Cita {
-  id        Int            @id @default(autoincrement())
-  fecha     DateTime
-  hora      String
-  estado    EstadoCita     @default(PENDIENTE)
-  nota      String?
-  createdAt DateTime       @default(now())
-  usuarioId Int
-  barberoId Int
-  barbero   Barbero        @relation(fields: [barberoId], references: [id])
-  usuario   Usuario        @relation(fields: [usuarioId], references: [id])
-  servicios CitaServicio[]
-  venta     Venta?
+  id                      Int                  @id @default(autoincrement())
+  fecha                   DateTime
+  hora                    String
+  estado                  EstadoCita           @default(PENDIENTE)
+  respuestaAsistencia     RespuestaAsistencia  @default(SIN_RESPUESTA)
+  recordatorioEnviadoAt   DateTime?
+  recordatorioIntentadoAt DateTime?
+  recordatorioIntentos    Int                  @default(0)
+  ultimoErrorRecordatorio String?
+  googleCalendarEventId   String?
+  calendarSyncStatus      EstadoSyncCalendario @default(PENDIENTE)
+  calendarSyncIntentos    Int                  @default(0)
+  calendarSyncError       String?
+  nota                    String?
+  createdAt               DateTime             @default(now())
+  usuarioId               Int
+  barberoId               Int
+  barbero                 Barbero              @relation(fields: [barberoId], references: [id])
+  usuario                 Usuario              @relation(fields: [usuarioId], references: [id])
+  servicios               CitaServicio[]
+  venta                   Venta?
 }
 
 model CitaServicio {
@@ -128,7 +138,6 @@ enum Rol {
   RECEPCION
   PRODUCTOS
   CLIENTE
-
 }
 
 model Venta {
@@ -175,7 +184,6 @@ enum MetodoPago {
   TRANSFERENCIA
 }
 
-
 model ImagenCarrusel {
   id          Int      @id @default(autoincrement())
   url         String
@@ -187,16 +195,16 @@ model ImagenCarrusel {
 }
 
 model Producto {
-  id          Int      @id @default(autoincrement())
+  id          Int             @id @default(autoincrement())
   nombre      String
   descripcion String?
   precio      Float
   imagen      String?
   categoria   String?
   badge       String?
-  stock       Int      @default(0)
-  activo      Boolean  @default(true)
-  createdAt   DateTime @default(now())
+  stock       Int             @default(0)
+  activo      Boolean         @default(true)
+  createdAt   DateTime        @default(now())
   ventas      VentaProducto[]
 }
 
@@ -226,13 +234,22 @@ model UsuarioMembresia {
   usuario      Usuario         @relation(fields: [usuarioId], references: [id])
 }
 
-
-
 enum EstadoCita {
   PENDIENTE
   CONFIRMADA
   CANCELADA
   COMPLETADA
+}
+
+enum RespuestaAsistencia {
+  SIN_RESPUESTA
+  ASISTIRE
+}
+
+enum EstadoSyncCalendario {
+  PENDIENTE
+  SINCRONIZADO
+  ERROR
 }
 
 enum EstadoMembresia {
@@ -264,6 +281,28 @@ model Configuracion {
   id                Int     @id @default(1)
   mostrarProductos  Boolean @default(true)
   mostrarMembresias Boolean @default(true)
+}
+
+/// Horario de atención compartido por reservas, WhatsApp y agenda del barbero.
+/// diaSemana usa el estándar de JavaScript: domingo=0, lunes=1, ..., sábado=6.
+model HorarioAtencion {
+  id           Int     @id @default(autoincrement())
+  diaSemana    Int     @unique
+  abierto      Boolean @default(true)
+  horaApertura String  @default("09:00")
+  horaCierre   String  @default("21:00")
+}
+
+/// Conexión única del calendario de la barbería. El refresh token se cifra
+/// en la aplicación antes de guardarse.
+model GoogleCalendarIntegration {
+  id                    Int      @id @default(1)
+  calendarId            String
+  calendarName          String
+  accountEmail          String?
+  refreshTokenEncrypted String
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
 }
 
 model ConversacionWhatsapp {

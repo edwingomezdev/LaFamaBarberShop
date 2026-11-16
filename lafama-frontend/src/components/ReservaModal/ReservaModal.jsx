@@ -36,9 +36,12 @@ export default function ReservaModal({
   onConfirmar,
 }) {
   const [step, setStep] = useState(1);
+  const [telefonoContacto, setTelefonoContacto] = useState('');
+  const [aceptaRecordatorios, setAceptaRecordatorios] = useState(false);
 
   useEffect(() => {
     if (!open) return;
+    setTelefonoContacto(usuario?.telefono || '');
     // Si ya venías con servicio/barbero elegidos desde la página,
     // el modal arranca directo en el paso que corresponda.
     // eslint-disable-next-line react-hooks/set-state-in-effect
@@ -149,6 +152,13 @@ export default function ReservaModal({
                 onChange={(e) => onNotaChange(e.target.value)}
                 style={{ resize: "none", marginTop: 16 }}
               />
+              <label className="rm-reminder-consent">
+                <input type="checkbox" checked={aceptaRecordatorios} onChange={(event) => setAceptaRecordatorios(event.target.checked)} />
+                <span>Quiero recibir un recordatorio de esta cita por WhatsApp con opciones para confirmar, cambiar la hora o cancelar.</span>
+              </label>
+              {aceptaRecordatorios && (
+                <input className="form-input" type="tel" inputMode="tel" autoComplete="tel" placeholder="Número de WhatsApp (con indicativo, ej. +57 300 123 4567)" value={telefonoContacto} onChange={(event) => setTelefonoContacto(event.target.value)} style={{ marginTop: 12 }} />
+              )}
               <div className="summary-total">
                 <span className="summary-total-label">Total</span>
                 <span className="summary-total-val">{formatPrecio(totalPrecio)}</span>
@@ -165,7 +175,7 @@ export default function ReservaModal({
             </button>
           )}
           {step === 4 && (
-            <button className="btn-reservar" style={{ marginTop: 0 }} onClick={onConfirmar}>
+            <button className="btn-reservar" style={{ marginTop: 0 }} onClick={() => onConfirmar({ telefonoContacto, aceptaRecordatoriosWhatsapp: aceptaRecordatorios })}>
               {usuario ? "CONFIRMAR CITA" : "INICIA SESIÓN PARA RESERVAR"}
             </button>
           )}

@@ -1,6 +1,7 @@
 const metaConfig = require("../../config/meta.config");
 const whatsappService = require("../services/whatsapp.service");
 const automationService = require("../../services/automation.service");
+const citasWhatsAppService = require('../../services/citasWhatsApp.service')
 const responseFormatter = require("../formatters/response.formatter");
 const crypto = require("crypto");
 
@@ -75,21 +76,22 @@ class WhatsAppController {
                 if (messageId && recentMessages.has(messageId)) continue;
                 if (messageId) recentMessages.set(messageId, now + MESSAGE_DEDUPE_TTL_MS);
 
-                if (message.type !== "text") {
-                    console.log("Mensaje ignorado:", message.type);
-                    continue;
+                const buttonPayload = message.interactive?.button_reply?.id || message.button?.payload
+                let reply
+                if (buttonPayload) {
+                    reply = await citasWhatsAppService.procesarBoton(message.from, buttonPayload)
+                } else if (message.type === 'text') {
+                    const text = message.text?.body?.trim() || ''
+                    const context = await require('../../automation/conversation/conversation.manager').get(message.from)
+                    const rescheduleReply = await citasWhatsAppService.continuarReprogramacion(message.from, context, text)
+                    const response = rescheduleReply ? null : await automationService.chat({ phone: message.from, message: text })
+                    reply = rescheduleReply || responseFormatter.format(response)
+                } else {
+                    console.log("Mensaje ignorado:", message.type)
+                    continue
                 }
-
-                console.log("Webhook WhatsApp aceptado: mensaje de texto recibido.");
-
-                const response = await automationService.chat({
-                    phone: message.from,
-                    message: message.text?.body?.trim() || "",
-                });
-
-                const reply = responseFormatter.format(response);
                 if (reply) {
-                    await whatsappService.sendTextMessage(message.from, reply);
+                    await whatsappService.sendTextMessage(message.from, typeof reply === 'string' ? reply : reply);
                     console.log("Respuesta automática de WhatsApp enviada.");
                 }
             }

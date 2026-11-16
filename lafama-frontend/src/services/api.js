@@ -7,7 +7,11 @@
 // build. Cuando comparten dominio, la ruta /api funciona sin configuración.
 // ─────────────────────────────────────────────────────────────────────────────
 
-export const API = import.meta.env.VITE_API_URL || (import.meta.env.DEV ? "http://localhost:3000/api" : "/api");
+const configuredApi = import.meta.env.VITE_API_URL?.trim();
+const pointsToLocalComputer = /^https?:\/\/(localhost|127(?:\.\d{1,3}){3}|\[::1\])(?::\d+)?(?:\/|$)/i.test(configuredApi || "");
+export const API = configuredApi && !(import.meta.env.PROD && pointsToLocalComputer)
+  ? configuredApi.replace(/\/$/, "")
+  : import.meta.env.DEV ? "http://localhost:3000/api" : "/api";
 
 // ── Helpers de token ──────────────────────────────────────────────────────────
 
@@ -99,10 +103,8 @@ export const getImageUrl = (imgPath) => {
   if (!imgPath) return "";
   if (imgPath.startsWith("http")) return imgPath;
   // En desarrollo apunta a localhost; en producción usa la misma base
-  const base = import.meta.env.VITE_API_URL
-    ? new URL(import.meta.env.VITE_API_URL, window.location.origin).origin
-    : import.meta.env.DEV
-      ? "http://localhost:3000"
-      : window.location.origin;
+  const base = API.startsWith("http")
+    ? new URL(API, window.location.origin).origin
+    : window.location.origin;
   return `${base}${imgPath}`;
 };

@@ -19,4 +19,14 @@ const actualizar = async (data) => {
   })
 }
 
-module.exports = { obtener, actualizar }
+const obtenerHorarios = () => prisma.horarioAtencion.findMany({ orderBy: { diaSemana: 'asc' } })
+
+const actualizarHorarios = async (horarios) => prisma.$transaction(
+  horarios.map((horario) => prisma.horarioAtencion.upsert({
+    where: { diaSemana: horario.diaSemana },
+    create: horario,
+    update: { abierto: horario.abierto, horaApertura: horario.horaApertura, horaCierre: horario.horaCierre },
+  }))
+)
+
+module.exports = { obtener, actualizar, obtenerHorarios, actualizarHorarios }

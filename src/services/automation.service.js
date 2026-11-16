@@ -257,7 +257,7 @@ class AutomationService {
 
         return {
             success: true,
-            message: `Confirma tu reserva:\n👤 ${nombre}\n📞 ${phone}\n💈 ${context.service.nombre}\n✂️ ${context.barber.nombre}\n📅 ${context.date} a las ${context.time}\n\nEscribe *CONFIRMAR* para reservar.`,
+            message: `Confirma tu reserva:\n👤 ${nombre}\n📞 ${phone}\n💈 ${context.service.nombre}\n✂️ ${context.barber.nombre}\n📅 ${context.date} a las ${context.time}\n\nAl confirmar, aceptas recibir por este WhatsApp un recordatorio de esta cita con opciones para confirmar asistencia, cambiarla o cancelarla. Escribe *CONFIRMAR* para reservar.`,
         };
     }
 
@@ -297,7 +297,9 @@ class AutomationService {
 
                 fecha: context.date,
 
-                hora: context.time
+                hora: context.time,
+                telefonoContacto: phone,
+                aceptaRecordatoriosWhatsapp: true,
 
             });
         } catch (err) {
@@ -351,7 +353,7 @@ class AutomationService {
             success: true,
 
             message:
-                "✅ Tu cita fue reservada exitosamente. ¡Te esperamos en La Fama Barber! 💈"
+                "✅ Recibimos tu solicitud de cita. La barbería la revisará y te confirmará por este WhatsApp. Puedes escribir *hola* si necesitas ayuda. 💈"
 
         };
     }

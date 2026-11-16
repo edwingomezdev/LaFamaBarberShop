@@ -17,7 +17,7 @@ class AppointmentsRepository {
         return { inicio, fin };
     }
 
-    async getAppointments(barberoId, fecha) {
+    async getAppointments(barberoId, fecha, excludeAppointmentId = null) {
         const { inicio, fin } = this.getRangoDelDia(fecha);
 
         return prisma.cita.findMany({
@@ -28,8 +28,9 @@ class AppointmentsRepository {
                     lt: fin,
                 },
                 estado: {
-                    in: ["PENDIENTE", "CONFIRMADA"],
+                    in: ["PENDIENTE", "CONFIRMADA", "COMPLETADA"],
                 },
+                ...(excludeAppointmentId ? { id: { not: Number(excludeAppointmentId) } } : {}),
             },
             include: {
                 servicios: {
@@ -56,7 +57,7 @@ class AppointmentsRepository {
                     lt: fin,
                 },
                 estado: {
-                    in: ["PENDIENTE", "CONFIRMADA"],
+                    in: ["PENDIENTE", "CONFIRMADA", "COMPLETADA"],
                 },
             },
         });

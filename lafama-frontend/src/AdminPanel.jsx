@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
+import { API } from "./services/api";
 
-const API = import.meta.env.VITE_API_URL || (import.meta.env.DEV ? "http://localhost:3000/api" : "/api");
 const getToken = () => localStorage.getItem("admin_token");
 const PANEL_CONFIG = {
   admin: { name: "Administrativo", roles: ["ADMIN"], initialPage: "dashboard", pages: null },
@@ -2636,6 +2636,10 @@ function PersonalPanel() {
 // ── CONFIGURACIÓN ──
 function ConfiguracionPanel() {
   const [config, setConfig] = useState({ mostrarProductos: true, mostrarMembresias: true });
+  const [calendar, setCalendar] = useState(null);
+  const [calendarLoading, setCalendarLoading] = useState(false);
+  const [horarios, setHorarios] = useState([]);
+  const [savingHours, setSavingHours] = useState(false);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
 
@@ -2648,9 +2652,38 @@ function ConfiguracionPanel() {
     setLoading(false);
   };
 
+  const loadCalendar = async () => {
+    try { setCalendar(await apiFetch('/calendar/status')); }
+    catch (error) { console.error('No se pudo consultar Google Calendar:', error); }
+  };
+  const loadHours = async () => {
+    try { setHorarios(await apiFetch('/configuracion/horarios')); }
+    catch (error) { console.error('No se pudieron cargar los horarios:', error); }
+  };
+
   // La carga asíncrona actualiza el estado cuando termina la petición.
   // eslint-disable-next-line react-hooks/set-state-in-effect
-  useEffect(() => { load(); }, []);
+  useEffect(() => { load(); loadCalendar(); loadHours(); }, []);
+
+  const updateHour = (day, changes) => setHorarios((current) => current.map((item) => item.diaSemana === day ? { ...item, ...changes } : item));
+  const saveHours = async () => {
+    setSavingHours(true);
+    try { setHorarios(await apiFetch('/configuracion/horarios', { method: 'PUT', body: JSON.stringify(horarios) })); alert('Horarios guardados. La disponibilidad se actualiza para nuevas reservas.'); }
+    catch (error) { alert(error.error || 'No se pudieron guardar los horarios.'); }
+    finally { setSavingHours(false); }
+  };
+
+  const connectCalendar = async () => {
+    setCalendarLoading(true);
+    try {
+      const { url } = await apiFetch('/calendar/connect-url', { method: 'POST' });
+      window.location.assign(url);
+    } catch (error) {
+      console.error('No se pudo iniciar la conexión de Google Calendar:', error);
+      alert(error.error || 'No se pudo iniciar la conexión. Revisa la configuración OAuth de Google.');
+      setCalendarLoading(false);
+    }
+  };
 
   const toggle = async (campo) => {
     const nuevo = { ...config, [campo]: !config[campo] };
@@ -2677,6 +2710,23 @@ function ConfiguracionPanel() {
       </div>
       <ConfiguracionSwitch campo="mostrarProductos" titulo="Tienda de productos" desc="Si lo apagas, se oculta el link 'Productos' del menú y la página /productos redirige al inicio." config={config} saving={saving} onToggle={toggle} />
       <ConfiguracionSwitch campo="mostrarMembresias" titulo="Membresías" desc="Si lo apagas, se oculta el link 'Membresías' del menú y la página /membresias redirige al inicio." config={config} saving={saving} onToggle={toggle} />
+      <div style={{ background: 'var(--negro2)', border: '1px solid rgba(255,255,255,0.08)', padding: 24, marginTop: 24 }}>
+        <div style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: 18, fontWeight: 700, textTransform: 'uppercase', letterSpacing: 1, marginBottom: 8 }}>Horario semanal de reservas</div>
+        <p style={{ color: 'var(--gris)', fontSize: 13, marginBottom: 16 }}>Estos horarios controlan los espacios disponibles para reservas web y WhatsApp.</p>
+        {horarios.map((item) => <div key={item.diaSemana} style={{ display: 'grid', gridTemplateColumns: 'minmax(100px,1fr) auto auto auto', alignItems: 'center', gap: 12, padding: '10px 0', borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
+          <span>{['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'][item.diaSemana]}</span>
+          <label style={{ color: 'var(--gris)', fontSize: 12 }}><input type="checkbox" checked={item.abierto} onChange={(event) => updateHour(item.diaSemana, { abierto: event.target.checked })} /> Abierto</label>
+          <input aria-label={`Apertura ${item.diaSemana}`} type="time" disabled={!item.abierto} value={item.horaApertura} onChange={(event) => updateHour(item.diaSemana, { horaApertura: event.target.value })} />
+          <input aria-label={`Cierre ${item.diaSemana}`} type="time" disabled={!item.abierto} value={item.horaCierre} onChange={(event) => updateHour(item.diaSemana, { horaCierre: event.target.value })} />
+        </div>)}
+        <button className="btn-primary" disabled={savingHours || horarios.length !== 7} onClick={saveHours} style={{ marginTop: 18 }}>{savingHours ? 'GUARDANDO…' : 'GUARDAR HORARIOS'}</button>
+      </div>
+      <div style={{ background: 'var(--negro2)', border: '1px solid rgba(212,168,67,0.22)', padding: 24, marginTop: 24 }}>
+        <div style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: 18, fontWeight: 700, textTransform: 'uppercase', letterSpacing: 1 }}>Google Calendar de la barbería</div>
+        <p style={{ color: 'var(--gris)', fontSize: 13, margin: '8px 0 16px' }}>Las citas nuevas, reprogramadas y canceladas se sincronizan en un calendario compartido con zona horaria de Medellín.</p>
+        {calendar?.connected ? <p style={{ color: '#27ae60', marginBottom: 14 }}>Conectado: {calendar.calendarName}{calendar.accountEmail ? ` · ${calendar.accountEmail}` : ''}</p> : <p style={{ color: 'var(--gris)', marginBottom: 14 }}>Todavía no hay un calendario conectado.</p>}
+        <button className="btn-primary" disabled={calendarLoading} onClick={connectCalendar}>{calendarLoading ? 'CONECTANDO…' : calendar?.connected ? 'VOLVER A AUTORIZAR GOOGLE CALENDAR' : 'CONECTAR GOOGLE CALENDAR'}</button>
+      </div>
     </div>
   );
 }

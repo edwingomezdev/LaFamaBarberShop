@@ -329,6 +329,8 @@ const agendar = async ({
   servicioIds,
   nota,
   usuarioId,
+  telefonoContacto,
+  aceptaRecordatoriosWhatsapp = false,
 }) => {
   const barberoIdNumber = Number(barberoId)
 
@@ -442,28 +444,36 @@ const agendar = async ({
   /*
    * 6. Crear la cita.
    */
-  return prisma.cita.create({
-    data: {
-      usuarioId,
-      barberoId: barberoIdNumber,
-      fecha: new Date(fecha),
-      hora,
-      nota,
+  const telefono = String(telefonoContacto || '').replace(/[^\d+]/g, '')
+  if (aceptaRecordatoriosWhatsapp && !telefono) {
+    throw createError(400, 'Escribe un teléfono para recibir recordatorios por WhatsApp')
+  }
+  if (telefono && telefono.replace(/\D/g, '').length < 10) {
+    throw createError(400, 'El teléfono de WhatsApp no parece válido')
+  }
 
-      servicios: {
-        create: servicioIdsNumber.map(
-          (servicioId) => ({
-            servicio: {
-              connect: {
-                id: servicioId,
-              },
-            },
-          })
-        ),
+  return prisma.$transaction(async (tx) => {
+    if (telefono || aceptaRecordatoriosWhatsapp) {
+      await tx.usuario.update({
+        where: { id: usuarioId },
+        data: {
+          ...(telefono ? { telefono } : {}),
+          aceptaRecordatoriosWhatsapp: Boolean(aceptaRecordatoriosWhatsapp),
+        },
+      })
+    }
+    return tx.cita.create({
+      data: {
+        usuarioId,
+        barberoId: barberoIdNumber,
+        fecha: new Date(fecha),
+        hora,
+        nota,
+        calendarSyncStatus: 'PENDIENTE',
+        servicios: { create: servicioIdsNumber.map((servicioId) => ({ servicio: { connect: { id: servicioId } } })) },
       },
-    },
-
-    include: CITA_INCLUDE,
+      include: CITA_INCLUDE,
+    })
   })
 }
 
@@ -518,6 +528,9 @@ const cambiarEstado = async (id, estado) => {
     },
     data: {
       estado,
+      calendarSyncStatus: 'PENDIENTE',
+      calendarSyncIntentos: 0,
+      calendarSyncError: null,
     },
   })
 
@@ -559,7 +572,37 @@ const cancelar = async (id, usuarioId) => {
     },
     data: {
       estado: 'CANCELADA',
+      calendarSyncStatus: 'PENDIENTE',
+      calendarSyncIntentos: 0,
+      calendarSyncError: null,
     },
+  })
+}
+
+const reprogramar = async ({ id, fecha, hora, usuarioId }) => {
+  const cita = await prisma.cita.findUnique({ where: { id: Number(id) }, include: CITA_INCLUDE })
+  if (!cita) throw createError(404, 'Cita no encontrada')
+  if (usuarioId && cita.usuarioId !== usuarioId) throw createError(403, 'No puedes reprogramar una cita que no es tuya')
+  if (!['PENDIENTE', 'CONFIRMADA'].includes(cita.estado)) throw createError(400, 'Esta cita ya no se puede reprogramar')
+  const slots = await availabilityEngine.getAvailableSlots(
+    cita.barberoId,
+    fecha,
+    calcularDuracionTotal(cita.servicios.map((cs) => cs.servicio)),
+    { excludeAppointmentId: cita.id }
+  )
+  if (!slots.includes(hora)) throw createError(409, 'Ese horario ya no está disponible; elige otro')
+  return prisma.cita.update({
+    where: { id: cita.id },
+    data: {
+      fecha: new Date(fecha), hora, estado: 'CONFIRMADA',
+      respuestaAsistencia: 'SIN_RESPUESTA',
+      recordatorioEnviadoAt: null, recordatorioIntentadoAt: null,
+      recordatorioIntentos: 0, ultimoErrorRecordatorio: null,
+      calendarSyncStatus: 'PENDIENTE',
+      calendarSyncIntentos: 0,
+      calendarSyncError: null,
+    },
+    include: CITA_INCLUDE,
   })
 }
 
@@ -590,6 +633,59 @@ const listarPorFecha = (fechaStr) => {
     include: CITA_INCLUDE,
     orderBy: { hora: 'asc' },
   })
+}
+
+/** Agenda diaria del barbero y los inicios de horario posibles para un servicio. */
+const obtenerAgendaBarbero = async ({ barberoId, fecha, servicioId }) => {
+  const idBarbero = Number(barberoId)
+  if (!Number.isInteger(idBarbero) || !/^\d{4}-\d{2}-\d{2}$/.test(fecha || '')) {
+    throw createError(400, 'barberoId y fecha (YYYY-MM-DD) son requeridos')
+  }
+
+  const inicio = new Date(`${fecha}T00:00:00.000Z`)
+  if (Number.isNaN(inicio.getTime()) || inicio.toISOString().slice(0, 10) !== fecha) {
+    throw createError(400, 'La fecha indicada no es válida')
+  }
+  const fin = new Date(inicio.getTime() + 24 * 60 * 60 * 1000)
+  const diaSemana = inicio.getUTCDay()
+  const [barbero, horario, descanso, citas] = await Promise.all([
+    prisma.barbero.findUnique({ where: { id: idBarbero }, select: { id: true, nombre: true, activo: true } }),
+    prisma.horarioAtencion.findUnique({ where: { diaSemana } }),
+    prisma.diaDescanso.findFirst({ where: { barberoId: idBarbero, fecha: { gte: inicio, lt: fin } } }),
+    prisma.cita.findMany({
+      where: { barberoId: idBarbero, fecha: { gte: inicio, lt: fin }, estado: { in: ['PENDIENTE', 'CONFIRMADA', 'COMPLETADA'] } },
+      include: CITA_INCLUDE,
+      orderBy: { hora: 'asc' },
+    }),
+  ])
+
+  if (!barbero || !barbero.activo) throw createError(404, 'Barbero no disponible')
+
+  let servicio = null
+  let horariosDisponibles = []
+  if (servicioId) {
+    servicio = await prisma.servicio.findFirst({
+      where: { id: Number(servicioId), activo: true },
+      select: { id: true, nombre: true, duracion: true },
+    })
+    if (!servicio) throw createError(404, 'Servicio no disponible')
+    horariosDisponibles = await availabilityEngine.getAvailableSlots(
+      idBarbero,
+      fecha,
+      servicio.duracion,
+      { stepMinutes: 15 }
+    )
+  }
+
+  return {
+    fecha,
+    barbero,
+    horario: horario ? { abierto: horario.abierto, apertura: horario.horaApertura, cierre: horario.horaCierre } : null,
+    descanso: descanso ? { motivo: descanso.motivo || null } : null,
+    servicio,
+    horariosDisponibles,
+    citas,
+  }
 }
 
 /**
@@ -664,7 +760,7 @@ const agendarWalkIn = async ({ barberoId, servicioIds, clienteNombre, clienteTel
   })
 }
 
-const obtenerSlotsDisponibles = async ({ barberoId, fecha, servicioIds }) => {
+const obtenerSlotsDisponibles = async ({ barberoId, fecha, servicioIds, excludeAppointmentId }) => {
   if (!barberoId || !fecha || !Array.isArray(servicioIds) || servicioIds.length === 0) {
     throw createError(400, 'barberoId, fecha y servicioIds son requeridos')
   }
@@ -674,7 +770,7 @@ const obtenerSlotsDisponibles = async ({ barberoId, fecha, servicioIds }) => {
 
   const duracionTotal = calcularDuracionTotal(servicios)
 
-  return availabilityEngine.getAvailableSlots(barberoId, fecha, duracionTotal)
+  return availabilityEngine.getAvailableSlots(barberoId, fecha, duracionTotal, { excludeAppointmentId, stepMinutes: 15 })
 }
 
 const horasOcupadas = async ({
@@ -709,9 +805,11 @@ module.exports = {
   listar,
   listarPorFecha,
   listarPorUsuario,
+  obtenerAgendaBarbero,
   obtener,
   cambiarEstado,
   cancelar,
+  reprogramar,
   horasOcupadas,
   obtenerSlotsDisponibles,
   agendarWalkIn,

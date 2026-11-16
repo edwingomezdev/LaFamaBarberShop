@@ -5,7 +5,14 @@ const citaSchema = z.object({
   fecha: z.string().min(1, 'La fecha es requerida'),
   hora: z.string().min(1, 'La hora es requerida'),
   servicioIds: z.array(z.number()).min(1, 'Debes seleccionar al menos un servicio'),
-  nota: z.string().optional()
+  nota: z.string().optional(),
+  telefonoContacto: z.string().trim().max(24).optional(),
+  aceptaRecordatoriosWhatsapp: z.boolean().optional(),
+})
+
+const reprogramarCitaSchema = z.object({
+  fecha: z.string().min(1, 'La fecha es requerida'),
+  hora: z.string().min(1, 'La hora es requerida'),
 })
 
 const estadoSchema = z.object({
@@ -14,4 +21,4 @@ const estadoSchema = z.object({
   })
 })
 
-module.exports = { citaSchema, estadoSchema }
+module.exports = { citaSchema, estadoSchema, reprogramarCitaSchema }

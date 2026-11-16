@@ -6,8 +6,8 @@ import { ScrollTrigger } from "gsap/ScrollTrigger";
 import Navbar from "./components/Navbar";
 import Footer from "./components/Footer";
 import ReservaModal from "./components/ReservaModal";
+import { API } from "./services/api";
 
-const API = import.meta.env.VITE_API_URL || (import.meta.env.DEV ? "http://localhost:3000/api" : "/api");
 gsap.registerPlugin(ScrollTrigger);
 
 
@@ -463,6 +463,10 @@ export default function App() {
   const [miMembresia, setMiMembresia] = useState(null);
   const [showReservaModal, setShowReservaModal] = useState(false);
   const [flippedServicios, setFlippedServicios] = useState(() => new Set());
+  const [citaEditando, setCitaEditando] = useState(null);
+  const [fechaReprogramacion, setFechaReprogramacion] = useState('');
+  const [horasReprogramacion, setHorasReprogramacion] = useState([]);
+  const [cargandoReprogramacion, setCargandoReprogramacion] = useState(false);
 
   const showToast = (msg, type = 'success') => setToast({ msg, type });
 
@@ -560,7 +564,7 @@ export default function App() {
 
   const totalPrecio = selectedServicios.reduce((s, x) => s + x.precio, 0);
 
-  const reservar = async () => {
+  const reservar = async ({ telefonoContacto, aceptaRecordatoriosWhatsapp } = {}) => {
     if (!usuario) { setShowAuth(true); return; }
     if (!selectedServicios.length) { showToast('Selecciona al menos un servicio', 'error'); return; }
     if (!selectedBarbero) { showToast('Elige un barbero', 'error'); return; }
@@ -570,7 +574,7 @@ export default function App() {
       const r = await fetch(`${API}/citas`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-        body: JSON.stringify({ barberoId: selectedBarbero.id, fecha: formatFechaLocal(selectedFecha), hora: selectedHora, servicioIds: selectedServicios.map(s => s.id), nota })
+        body: JSON.stringify({ barberoId: selectedBarbero.id, fecha: formatFechaLocal(selectedFecha), hora: selectedHora, servicioIds: selectedServicios.map(s => s.id), nota, telefonoContacto, aceptaRecordatoriosWhatsapp })
       });
       const data = await r.json();
       if (!r.ok) { showToast(data.error || 'Error al agendar', 'error'); }
@@ -579,11 +583,40 @@ export default function App() {
   };
 
   const cancelarCita = async (id) => {
+    if (!window.confirm('¿Quieres cancelar esta cita?')) return;
     try {
       const r = await fetch(`${API}/citas/${id}`, { method: 'DELETE', headers: { Authorization: `Bearer ${token}` } });
       if (r.ok) { showToast('Cita cancelada'); fetchMisCitas(); }
       else showToast('Error al cancelar', 'error');
     } catch { showToast('Error de conexión', 'error'); }
+  };
+
+  const buscarHorasReprogramacion = async (cita, fecha) => {
+    setCitaEditando(cita);
+    setFechaReprogramacion(fecha);
+    setHorasReprogramacion([]);
+    if (!fecha) return;
+    setCargandoReprogramacion(true);
+    try {
+      const ids = cita.servicios?.map((item) => item.servicio?.id).filter(Boolean).join(',') || '';
+      const response = await fetch(`${API}/citas/slots-disponibles?barberoId=${cita.barberoId}&fecha=${fecha}&servicioIds=${ids}`);
+      const slots = await response.json();
+      setHorasReprogramacion(Array.isArray(slots) ? slots : []);
+    } catch { setHorasReprogramacion([]); }
+    finally { setCargandoReprogramacion(false); }
+  };
+
+  const guardarReprogramacion = async (cita, hora) => {
+    try {
+      const response = await fetch(`${API}/citas/${cita.id}/reprogramar`, {
+        method: 'PUT', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ fecha: fechaReprogramacion, hora }),
+      });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || 'No se pudo cambiar la cita');
+      setCitaEditando(null); setFechaReprogramacion(''); setHorasReprogramacion([]);
+      showToast('Cita reprogramada'); fetchMisCitas();
+    } catch (error) { showToast(error.message || 'Error de conexión', 'error'); }
   };
 
   const fetchSlotsDisponibles = useCallback(async () => {
@@ -816,7 +849,15 @@ export default function App() {
                             <span className="cita-item-detalle">🕐 {c.hora}</span>
                             {c.nota && <span className="cita-item-detalle">📝 {c.nota}</span>}
                           </div>
-                          {c.estado === 'PENDIENTE' && <button className="cita-item-cancelar" onClick={() => cancelarCita(c.id)}>Cancelar</button>}
+                          {['PENDIENTE', 'CONFIRMADA'].includes(c.estado) && <div className="cita-item-acciones">
+                            <button className="cita-item-cambiar" onClick={() => { setCitaEditando(citaEditando?.id === c.id ? null : c); setFechaReprogramacion(''); setHorasReprogramacion([]); }}>Cambiar hora</button>
+                            <button className="cita-item-cancelar" onClick={() => cancelarCita(c.id)}>Cancelar</button>
+                          </div>}
+                          {citaEditando?.id === c.id && <div className="cita-reprogramar">
+                            <label>Elige otra fecha <input type="date" min={new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Bogota' }).format(new Date())} value={fechaReprogramacion} onChange={(event) => buscarHorasReprogramacion(c, event.target.value)} /></label>
+                            {cargandoReprogramacion ? <span>Buscando horarios…</span> : fechaReprogramacion && !horasReprogramacion.length ? <span>No hay espacios libres ese día.</span> : null}
+                            {horasReprogramacion.map((hora) => <button key={hora} onClick={() => guardarReprogramacion(c, hora)}>{hora}</button>)}
+                          </div>}
                         </div>
                       ))}
                     </div>
@@ -884,8 +925,8 @@ export default function App() {
         <div className="modal-overlay" onClick={() => setShowConfirm(false)}>
           <div className="confirm-modal" onClick={e => e.stopPropagation()}>
             <div className="confirm-icon">✓</div>
-            <div className="confirm-title">¡CITA CONFIRMADA!</div>
-            <div className="confirm-sub">Te esperamos en La Fama Barber. Llega 5 min antes.</div>
+            <div className="confirm-title">{confirmData.estado === 'CONFIRMADA' ? '¡CITA CONFIRMADA!' : 'SOLICITUD REGISTRADA'}</div>
+            <div className="confirm-sub">{confirmData.estado === 'CONFIRMADA' ? 'Te esperamos en La Fama Barber. Llega 5 min antes.' : 'La barbería revisará tu solicitud y confirmará la cita. Puedes ver su estado en Mis citas.'}</div>
             <div className="confirm-details">
               <div className="confirm-row"><span className="confirm-row-key">Servicios</span><span className="confirm-row-val">{confirmData.servicios?.map(s => s.servicio?.nombre).join(', ')}</span></div>
               <div className="confirm-row"><span className="confirm-row-key">Barbero</span><span className="confirm-row-val">{confirmData.barbero?.nombre}</span></div>

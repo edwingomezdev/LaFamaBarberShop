@@ -33,6 +33,9 @@ const whatsappRoutes = require("./whatsapp/routes/whatsapp.routes");
 const availabilityRoutes = require('./routes/availability.routes')
 const ventasRoutes = require('./routes/ventas.routes')
 const configuracionRoutes = require('./routes/configuracion.routes')
+const calendarRoutes = require('./routes/calendar.routes')
+const googleCalendar = require('./services/googleCalendar.service')
+const enviarRecordatoriosCitas = require('./jobs/recordatoriosCitas.job')
 
 
 
@@ -81,6 +84,7 @@ app.use("/api/whatsapp", whatsappRoutes);
 app.use('/api/availability', availabilityRoutes)
 app.use('/api/ventas', ventasRoutes)
 app.use('/api/configuracion', configuracionRoutes)
+app.use('/api/calendar', calendarRoutes)
 
 // ── Health check (para monitoreo de Railway/Render) ────────────────────────
 // Antes vivía en '/', pero esa ruta ahora debe mostrar el sitio (React).
@@ -148,6 +152,19 @@ app.listen(PORT, '0.0.0.0', () => {
   }
   runJobs()
   setInterval(runJobs, 30 * 60 * 1000)
+
+  let appointmentJobsRunning = false
+  const runAppointmentJobs = async () => {
+    if (appointmentJobsRunning) return
+    appointmentJobsRunning = true
+    const results = await Promise.allSettled([googleCalendar.syncPending(), enviarRecordatoriosCitas()])
+    results.forEach((result) => {
+      if (result.status === 'rejected') logger.error({ err: result.reason }, 'Error ejecutando agenda, calendario o recordatorios')
+    })
+    appointmentJobsRunning = false
+  }
+  runAppointmentJobs()
+  setInterval(runAppointmentJobs, 5 * 60 * 1000)
 })
 
 // ── Manejo de errores no capturados ──────────────────────────────────────────

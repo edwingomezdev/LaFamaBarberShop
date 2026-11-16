@@ -10,6 +10,7 @@ const envSchema = z.object({
   GOOGLE_CLIENT_ID: z.string().optional(),
   GOOGLE_CLIENT_SECRET: z.string().optional(),
   GOOGLE_CALLBACK_URL: z.string().url().optional(),
+  GOOGLE_CALENDAR_CALLBACK_URL: z.string().url().optional(),
   FRONTEND_URL: z.string().url().optional(),
   CORS_ORIGIN: z.string().default('http://localhost:5173'),
   META_APP_SECRET: z.string().optional(),
@@ -18,6 +19,8 @@ const envSchema = z.object({
   WHATSAPP_ACCESS_TOKEN: z.string().optional(),
   WHATSAPP_PHONE_NUMBER_ID: z.string().optional(),
   GRAPH_API_VERSION: z.string().default('v23.0'),
+  WHATSAPP_REMINDER_TEMPLATE_NAME: z.string().optional(),
+  WHATSAPP_REMINDER_LANGUAGE: z.string().default('es_CO'),
 })
 
 const _parsed = envSchema.safeParse(process.env)

@@ -2,19 +2,6 @@ const prisma = require('../prisma')
 
 const cancelarCitasPendientes = async () => {
   try {
-    // Cancelar citas PENDIENTES sin confirmar después de 2 horas
-    const hace2Horas = new Date(Date.now() - 2 * 60 * 60 * 1000)
-    const citasCanceladas = await prisma.cita.updateMany({
-      where: {
-        estado: 'PENDIENTE',
-        createdAt: { lt: hace2Horas }
-      },
-      data: { estado: 'CANCELADA' }
-    })
-    if (citasCanceladas.count > 0) {
-      console.log(`✅ ${citasCanceladas.count} cita(s) canceladas por no confirmación en 2 horas`)
-    }
-
     // Cancelar membresías vencidas por fecha
     const hoy = new Date()
     const membresiasVencidas = await prisma.usuarioMembresia.updateMany({

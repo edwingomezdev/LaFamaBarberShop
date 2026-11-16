@@ -1,8 +1,11 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
+import { API } from "./services/api";
 
-const API = import.meta.env.VITE_API_URL || (import.meta.env.DEV ? "http://localhost:3000/api" : "/api");
 const getToken = () => localStorage.getItem("barber_token");
+const fechaHoyBogota = () => new Intl.DateTimeFormat("en-CA", {
+  timeZone: "America/Bogota", year: "numeric", month: "2-digit", day: "2-digit"
+}).format(new Date());
 
 const getImageUrl = (img) => {
   if (!img) return "";
@@ -218,6 +221,9 @@ export default function BarberView() {
     return b ? JSON.parse(b) : null;
   });
   const [citas, setCitas] = useState([]);
+  const [agendaDia, setAgendaDia] = useState(fechaHoyBogota);
+  const [agenda, setAgenda] = useState(null);
+  const [servicioAgendaId, setServicioAgendaId] = useState("");
   const [servicios, setServicios] = useState([]);
   const [estilosCortes, setEstilosCortes] = useState([]);
   const [zoomItem, setZoomItem] = useState(null);
@@ -250,12 +256,15 @@ export default function BarberView() {
   const loadCitas = useCallback(async (barberoId, isFirst = false) => {
     if (!isFirst) setLoading(false);
     try {
-      const data = await apiFetch(`/citas/barbero/${barberoId}`);
+      const params = new URLSearchParams({ fecha: agendaDia });
+      if (servicioAgendaId) params.set("servicioId", servicioAgendaId);
+      const data = await apiFetch(`/citas/barbero/${barberoId}/agenda?${params.toString()}`);
+      const citasDelDia = data.citas || [];
 
       // Detectar citas nuevas
       if (!isFirst && prevCitasRef.current.length > 0) {
         const prevIds = new Set(prevCitasRef.current.map(c => c.id));
-        const nuevas = data.filter(c => !prevIds.has(c.id));
+        const nuevas = citasDelDia.filter(c => !prevIds.has(c.id));
 
         if (nuevas.length > 0) {
           playNotificationSound();
@@ -279,19 +288,23 @@ export default function BarberView() {
         }
       }
 
-      prevCitasRef.current = data;
-      setCitas(data);
+      prevCitasRef.current = citasDelDia;
+      setAgenda(data);
+      setCitas(citasDelDia);
       if (isFirst) setLoading(false);
     } catch {
       if (isFirst) setLoading(false);
     }
-  }, []);
+  }, [agendaDia, servicioAgendaId]);
 
   // Cargar servicios
   useEffect(() => {
     fetch(`${API}/servicios`)
       .then(r => r.json())
-      .then(setServicios)
+      .then(data => {
+        setServicios(data);
+        if (data.length) setServicioAgendaId(actual => actual || String(data[0].id));
+      })
       .catch(() => {});
   }, []);
 
@@ -381,6 +394,10 @@ if (!barbero) {
     .reduce((s, c) => s + c.servicios.reduce((x, sv) => x + (sv.servicio?.precio || 0), 0), 0);
 
   const citasActivas = citas.filter(c => c.estado !== "CANCELADA");
+  const agendaItems = [
+    ...citasActivas.map(c => ({ tipo: "cita", hora: c.hora, cita: c })),
+    ...(agenda?.horariosDisponibles || []).map(hora => ({ tipo: "libre", hora })),
+  ].sort((a, b) => a.hora.localeCompare(b.hora) || (a.tipo === "cita" ? -1 : 1));
 
   return (
     <>
@@ -475,77 +492,88 @@ if (!barbero) {
         <div className="content">
           {activeTab === "citas" && (
             <>
-              <div className="content-header">
-              <div className="content-title">Mis citas · hoy y próximas</div>
-                <div className="refresh-info">
-                  <span>Actualiza en {30 - Math.floor(refreshProgress * 30 / 100)}s</span>
-                  <div className="refresh-bar">
-                    <div className="refresh-bar-fill" style={{ width: `${refreshProgress}%` }} />
+              <div className="content-header agenda-header">
+                <div>
+                  <div className="content-title">Agenda del día</div>
+                  <div className="agenda-date-label">
+                    {new Date(`${agendaDia}T12:00:00`).toLocaleDateString("es-CO", { weekday: "long", day: "numeric", month: "long", year: "numeric" })}
+                  </div>
+                </div>
+                <div className="agenda-filters">
+                  <label>Fecha<input aria-label="Fecha de agenda" type="date" value={agendaDia} onChange={e => setAgendaDia(e.target.value)} /></label>
+                  <label>Servicio para ver espacios libres
+                    <select value={servicioAgendaId} onChange={e => setServicioAgendaId(e.target.value)}>
+                      {servicios.map(s => <option key={s.id} value={s.id}>{s.nombre} · {s.duracion} min</option>)}
+                    </select>
+                  </label>
+                  <div className="refresh-info">
+                    <span>Actualiza en {30 - Math.floor(refreshProgress * 30 / 100)}s</span>
+                    <div className="refresh-bar"><div className="refresh-bar-fill" style={{ width: `${refreshProgress}%` }} /></div>
                   </div>
                 </div>
               </div>
 
               {loading ? (
-                <div className="loading"><div className="spinner" />Cargando citas...</div>
-              ) : citasActivas.length === 0 ? (
+                <div className="loading"><div className="spinner" />Cargando agenda...</div>
+              ) : agenda?.descanso || agenda?.horario?.abierto === false ? (
+                <div className="empty-state">
+                  <div className="empty-icon">🌙</div>
+                  <div className="empty-title">Día sin atención</div>
+                  <p className="empty-sub">{agenda?.descanso?.motivo || "No hay horario de atención configurado para este día."}</p>
+                </div>
+              ) : agendaItems.length === 0 ? (
                 <div className="empty-state">
                   <div className="empty-icon">✂️</div>
-                  <div className="empty-title">Sin citas por ahora</div>
-                  <p className="empty-sub">Las citas aparecerán aquí automáticamente cuando sean agendadas</p>
+                  <div className="empty-title">Agenda libre</div>
+                  <p className="empty-sub">No hay citas reservadas. Los horarios libres aparecerán al seleccionar un servicio.</p>
                 </div>
               ) : (
-                <div className="citas-tabla-wrap">
-                  <table className="citas-tabla">
-                    <thead>
-                      <tr>
-                        <th>Fecha</th>
-                        <th>Hora</th>
-                        <th>Cliente</th>
-                        <th>Servicios</th>
-                        <th>Contacto</th>
-                        <th>Total</th>
-                        <th>Estado</th>
-                        <th>Acción</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {citasActivas.map(c => {
-                        const total = c.servicios?.reduce((s, x) => s + (x.servicio?.precio || 0), 0);
-                        const esNueva = nuevasCitas.has(c.id);
-                        return (
-                          <tr key={c.id} className={esNueva ? "fila-nueva" : ""}>
-                            <td data-label="Fecha">{new Date(`${String(c.fecha).slice(0, 10)}T12:00:00`).toLocaleDateString("es-CO", { day: "numeric", month: "short", year: "numeric" })}</td>
-                            <td data-label="Hora" className="td-hora">{c.hora}</td>
-                            <td data-label="Cliente">
-                              {c.usuario?.nombre}
-                              {esNueva && <span className="badge-nueva" style={{ marginLeft: 8 }}>● Nueva</span>}
-                              {c.nota && <div className="td-sub">📝 {c.nota}</div>}
-                            </td>
-                            <td data-label="Servicios">
-                              <div className="td-servicios-tags">
-                                {c.servicios?.map(s => (
-                                  <span key={s.servicio?.id} className="servicio-tag">{s.servicio?.nombre}</span>
-                                ))}
-                              </div>
-                            </td>
-                            <td data-label="Contacto">{c.usuario?.telefono ? <>📞 {c.usuario.telefono}</> : "—"}</td>
-                            <td data-label="Total" className="td-total">${total?.toLocaleString("es-CO")}</td>
-                            <td data-label="Estado"><span className={`badge badge-${c.estado}`}>{c.estado}</span></td>
-                            <td data-label="Acción">
-                              {c.estado === "PENDIENTE" && (
-                                <button className="btn-action btn-completar" onClick={() => cambiarEstado(c.id, "CONFIRMADA")}>Confirmar</button>
-                              )}
-                              {c.estado === "CONFIRMADA" && (
-                                <button className="btn-action btn-completar" onClick={() => cambiarEstado(c.id, "COMPLETADA")}>✓ Completar</button>
-                              )}
-                              {c.estado === "COMPLETADA" && <span className="td-sub">—</span>}
-                            </td>
-                          </tr>
-                        );
-                      })}
-                    </tbody>
-                  </table>
-                </div>
+                <>
+                  <div className="agenda-summary">
+                    <span>Atención {agenda?.horario?.apertura || "09:00"} – {agenda?.horario?.cierre || "21:00"}</span>
+                    <span>{citasActivas.length} citas</span>
+                    <span>{agenda?.horariosDisponibles?.length || 0} inicios libres para {agenda?.servicio?.nombre || "el servicio elegido"}</span>
+                  </div>
+                  <div className="agenda-timeline">
+                    {agendaItems.map((item, index) => {
+                      if (item.tipo === "libre") return (
+                        <div className="agenda-entry agenda-entry-free" key={`free-${item.hora}`}>
+                          <div className="agenda-entry-time">{item.hora}</div>
+                          <div className="agenda-entry-card">
+                            <span className="agenda-entry-dot" />
+                            <div><strong>Espacio libre</strong><span>Puede iniciar {agenda?.servicio?.nombre} · {agenda?.servicio?.duracion} min</span></div>
+                            <span className="agenda-entry-tag">DISPONIBLE</span>
+                          </div>
+                        </div>
+                      );
+
+                      const c = item.cita;
+                      const duracion = c.servicios?.reduce((sum, s) => sum + (s.servicio?.duracion || 0), 0) || 0;
+                      const total = c.servicios?.reduce((sum, s) => sum + (s.servicio?.precio || 0), 0) || 0;
+                      const esNueva = nuevasCitas.has(c.id);
+                      return (
+                        <div className={`agenda-entry agenda-entry-booked ${esNueva ? "agenda-entry-new" : ""}`} key={`cita-${c.id}`}>
+                          <div className="agenda-entry-time">{c.hora}</div>
+                          <div className="agenda-entry-card">
+                            <span className="agenda-entry-dot" />
+                            <div className="agenda-entry-details">
+                              <strong>{c.usuario?.nombre || "Cliente"}{esNueva && <em> · NUEVA</em>}</strong>
+                              <span>{c.servicios?.map(s => s.servicio?.nombre).join(" + ")} · {duracion} min</span>
+                              {c.usuario?.telefono && <span>WhatsApp: {c.usuario.telefono}</span>}
+                              {c.nota && <span>Nota: {c.nota}</span>}
+                            </div>
+                            <div className="agenda-entry-actions">
+                              <span className={`badge badge-${c.estado}`}>{c.estado}</span>
+                              <strong>${total.toLocaleString("es-CO")}</strong>
+                              {c.estado === "PENDIENTE" && <button className="btn-action btn-completar" onClick={() => cambiarEstado(c.id, "CONFIRMADA")}>Confirmar</button>}
+                              {c.estado === "CONFIRMADA" && <button className="btn-action btn-completar" onClick={() => cambiarEstado(c.id, "COMPLETADA")}>✓ Completar</button>}
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </>
               )}
             </>
           )}

@@ -954,3 +954,46 @@
     .topbar-brand { font-size: 16px; }
     .stat-item { padding: 9px 8px; }
   }
+/* ── Agenda diaria del barbero: citas y huecos libres ── */
+.agenda-header { align-items: flex-start; gap: 20px; flex-wrap: wrap; }
+.agenda-date-label { color: var(--gris); font-family: 'Barlow Condensed', sans-serif; font-size: 13px; letter-spacing: 1px; text-transform: capitalize; margin-top: 5px; }
+.agenda-filters { display: flex; align-items: flex-end; flex-wrap: wrap; gap: 12px; }
+.agenda-filters label { display: flex; flex-direction: column; gap: 5px; color: var(--gris); font-family: 'Barlow Condensed', sans-serif; font-size: 10px; letter-spacing: 1.4px; text-transform: uppercase; }
+.agenda-filters input, .agenda-filters select { min-height: 38px; background: var(--negro2); border: 1px solid rgba(255,255,255,0.12); color: var(--blanco); padding: 8px 10px; font-family: 'Barlow', sans-serif; font-size: 12px; }
+.agenda-summary { display: flex; flex-wrap: wrap; gap: 10px 22px; padding: 14px 16px; margin-bottom: 14px; background: var(--negro2); border: 1px solid rgba(255,255,255,0.06); color: var(--gris); font-family: 'Barlow Condensed', sans-serif; font-size: 12px; letter-spacing: 1px; text-transform: uppercase; }
+.agenda-summary span + span { border-left: 1px solid rgba(255,255,255,0.12); padding-left: 22px; }
+.agenda-timeline { display: flex; flex-direction: column; gap: 8px; }
+.agenda-entry { display: grid; grid-template-columns: 68px minmax(0, 1fr); gap: 12px; align-items: stretch; }
+.agenda-entry-time { padding-top: 15px; text-align: right; font-family: 'Bebas Neue', sans-serif; font-size: 20px; letter-spacing: 1px; color: var(--blanco); }
+.agenda-entry-card { display: flex; align-items: center; gap: 14px; min-width: 0; padding: 13px 16px; background: var(--negro2); border: 1px solid rgba(255,255,255,0.07); border-left: 3px solid var(--rojo); }
+.agenda-entry-free .agenda-entry-card { background: rgba(39,174,96,0.045); border-left-color: var(--verde-claro); }
+.agenda-entry-dot { flex: 0 0 8px; height: 8px; border-radius: 50%; background: var(--rojo); }
+.agenda-entry-free .agenda-entry-dot { background: var(--verde-claro); }
+.agenda-entry-details { display: flex; flex: 1; flex-direction: column; gap: 3px; min-width: 0; }
+.agenda-entry-details strong, .agenda-entry-card > div > strong { font-family: 'Barlow Condensed', sans-serif; font-size: 15px; letter-spacing: .5px; color: var(--blanco); }
+.agenda-entry-details > span, .agenda-entry-card > div > span { color: var(--gris); font-size: 12px; overflow-wrap: anywhere; }
+.agenda-entry-details em { color: var(--oro); font-size: 10px; font-style: normal; letter-spacing: 1px; }
+.agenda-entry-tag { flex: 0 0 auto; color: var(--verde-claro); font-family: 'Barlow Condensed', sans-serif; font-size: 10px; letter-spacing: 1.5px; }
+.agenda-entry-actions { display: flex; align-items: center; justify-content: flex-end; gap: 10px; flex-wrap: wrap; }
+.agenda-entry-actions > strong { font-family: 'Bebas Neue', sans-serif; font-size: 18px; color: var(--oro); }
+.agenda-entry-new .agenda-entry-card { animation: filaNuevaPulse 2s ease infinite; }
+
+@media (max-width: 768px) {
+  .agenda-header { align-items: stretch; }
+  .agenda-filters { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.5fr); }
+  .agenda-filters .refresh-info { grid-column: 1 / -1; }
+  .agenda-entry { grid-template-columns: 54px minmax(0, 1fr); gap: 8px; }
+  .agenda-entry-time { font-size: 18px; }
+  .agenda-entry-card { align-items: flex-start; padding: 12px; gap: 10px; flex-wrap: wrap; }
+  .agenda-entry-details { flex-basis: calc(100% - 24px); }
+  .agenda-entry-actions { width: 100%; justify-content: flex-start; padding-left: 18px; }
+}
+
+@media (max-width: 480px) {
+  .agenda-filters { grid-template-columns: 1fr; }
+  .agenda-summary { gap: 8px 12px; padding: 12px; font-size: 10px; }
+  .agenda-summary span + span { padding-left: 12px; }
+  .agenda-entry { grid-template-columns: 46px minmax(0, 1fr); gap: 6px; }
+  .agenda-entry-time { font-size: 16px; }
+  .agenda-entry-tag { width: 100%; padding-left: 18px; }
+}

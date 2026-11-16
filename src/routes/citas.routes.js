@@ -14,8 +14,9 @@ const {
 } = require('../controllers/citas.controller')
 const { verificarToken, verificarBarberoToken, soloAdmin, permitirRoles } = require('../middlewares/auth.middleware')
 const validate = require('../middlewares/validate.middleware')
-const { citaSchema, estadoSchema } = require('../validators/citas.validator')
+const { citaSchema, estadoSchema, reprogramarCitaSchema } = require('../validators/citas.validator')
 const prisma = require('../prisma')
+const citasService = require('../services/citas.service')
 const ventasService = require('../services/ventas.service')
 
 // ── Rutas fijas primero (antes de /:id) ──
@@ -27,6 +28,27 @@ router.get('/horas-ocupadas', horasOcupadas)
 router.get('/slots-disponibles', slotsDisponibles)
 router.get('/hoy', verificarToken, permitirRoles('ADMIN', 'RECEPCION'), agendaDeHoy)
 router.post('/walk-in', verificarToken, permitirRoles('ADMIN', 'RECEPCION'), walkIn)
+router.put('/:id/reprogramar', verificarToken, permitirRoles('CLIENTE', 'ADMIN', 'RECEPCION'), validate(reprogramarCitaSchema), async (req, res, next) => {
+  try {
+    const usuarioId = ['ADMIN', 'RECEPCION'].includes(req.usuario.rol) ? undefined : req.usuario.id
+    res.json(await citasService.reprogramar({ id: req.params.id, ...req.body, usuarioId }))
+  }
+  catch (error) { next(error) }
+})
+
+router.get('/barbero/:barberoId/agenda', verificarBarberoToken, async (req, res, next) => {
+  try {
+    const barberoId = Number(req.params.barberoId)
+    if (req.barbero.barberoId !== barberoId) {
+      return res.status(403).json({ error: 'No puedes ver la agenda de otro barbero' })
+    }
+    res.json(await citasService.obtenerAgendaBarbero({
+      barberoId,
+      fecha: req.query.fecha,
+      servicioId: req.query.servicioId,
+    }))
+  } catch (error) { next(error) }
+})
 
 router.get('/barbero/:barberoId', verificarBarberoToken, async (req, res) => {
   try {
@@ -74,7 +96,7 @@ router.put('/barbero/:citaId/estado', verificarBarberoToken, async (req, res) =>
 
     const cita = await prisma.cita.update({
       where: { id: Number(req.params.citaId) },
-      data: { estado }
+      data: { estado, calendarSyncStatus: 'PENDIENTE', calendarSyncIntentos: 0, calendarSyncError: null }
     })
 
     // El barbero sigue haciendo exactamente lo mismo de siempre.
