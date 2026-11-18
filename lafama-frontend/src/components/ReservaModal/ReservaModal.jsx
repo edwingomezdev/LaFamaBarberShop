@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import Calendario from "../Calendario";
 import { getImageUrl } from "../../services/api";
 import "./ReservaModal.css";
@@ -15,7 +15,6 @@ const PASOS = ['Servicio', 'Barbero', 'Fecha y hora', 'Confirmar'];
  * mismo `reservar()` que ya existía, sin duplicar nada.
  */
 export default function ReservaModal({
-  open,
   onClose,
   servicios,
   barberos,
@@ -35,22 +34,9 @@ export default function ReservaModal({
   usuario,
   onConfirmar,
 }) {
-  const [step, setStep] = useState(1);
-  const [telefonoContacto, setTelefonoContacto] = useState('');
+  const [step, setStep] = useState(() => !selectedServicios.length ? 1 : !selectedBarbero ? 2 : 3);
+  const [telefonoContacto, setTelefonoContacto] = useState(usuario?.telefono || '');
   const [aceptaRecordatorios, setAceptaRecordatorios] = useState(false);
-
-  useEffect(() => {
-    if (!open) return;
-    setTelefonoContacto(usuario?.telefono || '');
-    // Si ya venías con servicio/barbero elegidos desde la página,
-    // el modal arranca directo en el paso que corresponda.
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    if (!selectedServicios.length) setStep(1);
-    else if (!selectedBarbero) setStep(2);
-    else setStep(3);
-  }, [open, selectedServicios.length, selectedBarbero]);
-
-  if (!open) return null;
 
   const puedeAvanzar = {
     1: selectedServicios.length > 0,

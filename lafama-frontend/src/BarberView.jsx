@@ -223,6 +223,7 @@ export default function BarberView() {
   const [citas, setCitas] = useState([]);
   const [agendaDia, setAgendaDia] = useState(fechaHoyBogota);
   const [agenda, setAgenda] = useState(null);
+  const [agendaError, setAgendaError] = useState("");
   const [servicioAgendaId, setServicioAgendaId] = useState("");
   const [servicios, setServicios] = useState([]);
   const [estilosCortes, setEstilosCortes] = useState([]);
@@ -255,7 +256,10 @@ export default function BarberView() {
   const removeToast = (id) => setToasts(prev => prev.filter(t => t.id !== id));
 
   const loadCitas = useCallback(async (barberoId, isFirst = false) => {
-    if (!isFirst) setLoading(false);
+    if (isFirst) {
+      setLoading(true);
+      setAgendaError("");
+    }
     try {
       const params = new URLSearchParams({ fecha: agendaDia });
       if (servicioAgendaId) params.set("servicioId", servicioAgendaId);
@@ -311,8 +315,14 @@ export default function BarberView() {
       prevCitasRef.current = citasDelDia;
       setAgenda(data);
       setCitas(citasDelDia);
-      if (isFirst) setLoading(false);
-    } catch {
+      setAgendaError("");
+    } catch (error) {
+      setAgendaError(error?.error || error?.message || "No se pudo cargar la agenda. Revisa tu conexión e inténtalo otra vez.");
+      if (isFirst) {
+        setAgenda(null);
+        setCitas([]);
+      }
+    } finally {
       if (isFirst) setLoading(false);
     }
   }, [agendaDia, servicioAgendaId]);
@@ -341,8 +351,6 @@ export default function BarberView() {
   useEffect(() => {
     if (!barbero) return;
 
-    // El efecto inicia una carga remota y muestra su estado mientras llega.
-    // eslint-disable-next-line react-hooks/set-state-in-effect
     setLoading(true);
     loadCitas(barbero.id, true);
     loadEstilosCortes();
@@ -533,12 +541,25 @@ if (!barbero) {
                 </div>
               </div>
 
+              {agendaError && agenda && (
+                <div className="agenda-alert" role="status" aria-live="polite">
+                  No se pudo actualizar la agenda. Se conserva la última información cargada.
+                  <button type="button" onClick={() => loadCitas(barbero.id, true)}>Reintentar</button>
+                </div>
+              )}
+
               {loading ? (
                 <div className="loading"><div className="spinner" />Cargando agenda...</div>
-              ) : agenda?.descanso || agenda?.horario?.abierto === false ? (
+              ) : agendaError && !agenda ? (
+                <div className="agenda-load-error" role="alert">
+                  <strong>No se pudo cargar el calendario</strong>
+                  <span>{agendaError}</span>
+                  <button type="button" className="btn-action" onClick={() => loadCitas(barbero.id, true)}>Reintentar</button>
+                </div>
+              ) : agenda?.descanso || !agenda?.horario || agenda?.horario?.abierto === false ? (
                 <div className="empty-state">
                   <div className="empty-icon">🌙</div>
-                  <div className="empty-title">Día sin atención</div>
+                  <div className="empty-title">{agenda?.descanso ? "Día sin atención" : "Horario no configurado"}</div>
                   <p className="empty-sub">{agenda?.descanso?.motivo || "No hay horario de atención configurado para este día."}</p>
                 </div>
               ) : agendaItems.length === 0 ? (
@@ -555,7 +576,7 @@ if (!barbero) {
                     <span>{agenda?.horariosDisponibles?.length || 0} inicios libres para {agenda?.servicio?.nombre || "el servicio elegido"}</span>
                   </div>
                   <div className="agenda-timeline">
-                    {agendaItems.map((item, index) => {
+                    {agendaItems.map((item) => {
                       if (item.tipo === "libre") return (
                         <div className="agenda-entry agenda-entry-free" key={`free-${item.hora}`}>
                           <div className="agenda-entry-time">{item.hora}</div>

@@ -15,7 +15,7 @@ import "./Navbar.css";
  *    el nav resuelve un comportamiento razonable por su cuenta
  *    (navegar a "/" y dejar la señal en sessionStorage).
  */
-export default function Navbar({ usuario, miMembresia, onMisCitas, onLogout, onEntrar }) {
+export default function Navbar({ usuario, miMembresia, onMisCitas, onLogout, onEntrar, onHome, onReservar }) {
   const navigate = useNavigate();
   const location = useLocation();
   const [config, setConfig] = useState({ mostrarProductos: true, mostrarMembresias: true });
@@ -35,8 +35,11 @@ export default function Navbar({ usuario, miMembresia, onMisCitas, onLogout, onE
       navigate("/");
       return;
     }
+    // On the landing page, links must restore its content before scrolling.
+    // The customer appointments view unmounts the landing sections.
+    onHome?.();
     if (!sectionId) {
-      window.scrollTo({ top: 0, behavior: "smooth" });
+      setTimeout(() => window.scrollTo({ top: 0, behavior: "smooth" }), 0);
       return;
     }
     setTimeout(() => document.getElementById(sectionId)?.scrollIntoView({ behavior: "smooth" }), 100);
@@ -56,6 +59,20 @@ export default function Navbar({ usuario, miMembresia, onMisCitas, onLogout, onE
     navigate("/");
   };
 
+  const handleReservar = () => {
+    setMenuOpen(false);
+    if (location.pathname !== "/") {
+      sessionStorage.setItem("scrollTarget", "booking");
+      navigate("/");
+      return;
+    }
+    if (onReservar) {
+      onReservar();
+      return;
+    }
+    goHomeAndScroll("booking");
+  };
+
   const irA = (ruta) => { setMenuOpen(false); navigate(ruta); };
 
   return (
@@ -72,7 +89,7 @@ export default function Navbar({ usuario, miMembresia, onMisCitas, onLogout, onE
         <button className="nav-link" onClick={() => goHomeAndScroll("servicios")}>Servicios</button>
         {config.mostrarMembresias && <button className="nav-link" onClick={() => irA("/membresias")}>Membresías</button>}
         {config.mostrarProductos && <button className="nav-link" onClick={() => irA("/productos")}>Productos</button>}
-        <button className="nav-link" onClick={() => goHomeAndScroll("booking")}>Reservar</button>
+        <button className="nav-link" onClick={handleReservar}>Reservar</button>
         {usuario && <button className="nav-link" onClick={handleMisCitas}>Mis Citas</button>}
         {usuario ? (
           <div className="nav-usuario-wrap">

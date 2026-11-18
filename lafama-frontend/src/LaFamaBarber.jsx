@@ -651,7 +651,9 @@ export default function App() {
       <Navbar
         usuario={usuario}
         miMembresia={miMembresia}
+        onHome={() => setVista('home')}
         onMisCitas={() => setVista('citas')}
+        onReservar={() => setShowReservaModal(true)}
         onLogout={logout}
         onEntrar={() => setShowAuth(true)}
       />
@@ -941,8 +943,7 @@ export default function App() {
       {toast && <Toast msg={toast.msg} type={toast.type} onClose={() => setToast(null)} />}
 
 
-      <ReservaModal
-        open={showReservaModal}
+      {showReservaModal && <ReservaModal
         onClose={() => setShowReservaModal(false)}
         servicios={servicios}
         barberos={barberos}
@@ -961,7 +962,7 @@ export default function App() {
         totalPrecio={totalPrecio}
         usuario={usuario}
         onConfirmar={reservar}
-      />
+      />}
 
       {/* Botones flotantes: WhatsApp + Instagram en un solo contenedor fijo */}
       <div className="floating-actions">
@@ -993,10 +994,13 @@ export default function App() {
           <FaWhatsapp className="mab-icon" />
           <span className="mab-label">WhatsApp</span>
         </a>
-        <a href="#ubicacion" className="mab-item mab-location">
+        <button type="button" className="mab-item mab-location" onClick={() => {
+          setVista('home');
+          setTimeout(() => document.getElementById('ubicacion')?.scrollIntoView({ behavior: 'smooth' }), 100);
+        }}>
           <FaMapMarkerAlt className="mab-icon" />
           <span className="mab-label">Ubicación</span>
-        </a>
+        </button>
         <button className="mab-item mab-cta" onClick={() => setShowReservaModal(true)}>
           <FaCut className="mab-icon" />
           <span className="mab-label">Reservar</span>

@@ -2,6 +2,12 @@ import { useState, useEffect, useCallback } from "react";
 import { API } from "./services/api";
 
 const getToken = () => localStorage.getItem("admin_token");
+const fechaBogota = (daysFromToday = 0) => {
+  const [year, month, day] = new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'America/Bogota', year: 'numeric', month: '2-digit', day: '2-digit',
+  }).format(new Date()).split('-').map(Number);
+  return new Date(Date.UTC(year, month - 1, day + daysFromToday)).toISOString().slice(0, 10);
+};
 const PANEL_CONFIG = {
   admin: { name: "Administrativo", roles: ["ADMIN"], initialPage: "dashboard", pages: null },
   recepcion: { name: "Recepción", roles: ["ADMIN", "RECEPCION"], initialPage: "citas", pages: ["citas"] },
@@ -2476,8 +2482,8 @@ function MembresiasPanel({ usuarios }) {
             <label className="field-label">Fecha de vencimiento (máx. 2 meses)</label>
             <input className="input" type="date" value={formAsignar.fechaFin}
               onChange={e => setFormAsignar(p => ({ ...p, fechaFin: e.target.value }))}
-              min={new Date().toISOString().split('T')[0]}
-              max={new Date(new Date().getTime() + 60 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]}
+              min={fechaBogota()}
+              max={fechaBogota(60)}
             />
             {error && <div className="error-msg">{error}</div>}
             <div className="modal-actions">
@@ -2661,8 +2667,6 @@ function ConfiguracionPanel() {
     catch (error) { console.error('No se pudieron cargar los horarios:', error); }
   };
 
-  // La carga asíncrona actualiza el estado cuando termina la petición.
-  // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => { load(); loadCalendar(); loadHours(); }, []);
 
   const updateHour = (day, changes) => setHorarios((current) => current.map((item) => item.diaSemana === day ? { ...item, ...changes } : item));

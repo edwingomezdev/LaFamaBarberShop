@@ -2,6 +2,9 @@ import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { API } from "./services/api";
 
 const formatPrecio = (p) => '$' + Number(p).toLocaleString('es-CO');
+const fechaHoyBogota = () => new Intl.DateTimeFormat('en-CA', {
+  timeZone: 'America/Bogota', year: 'numeric', month: '2-digit', day: '2-digit',
+}).format(new Date());
 
 const playNotificationSound = () => {
   try {
@@ -61,8 +64,7 @@ export default function RecepcionPanel() {
   const [walkInData, setWalkInData] = useState({ clienteNombre: '', clienteTelefono: '', barberoId: '', servicioIds: [] });
   const [cambiandoEstadoId, setCambiandoEstadoId] = useState(null);
   const [fechaAgenda, setFechaAgenda] = useState(() => {
-    const hoy = new Date();
-    return hoy.toISOString().split('T')[0];
+    return fechaHoyBogota();
   });
   const prevAgendaRef = useRef([]);
   const primeraCargaRef = useRef(true);
@@ -95,7 +97,7 @@ export default function RecepcionPanel() {
 
       // Solo avisamos de citas nuevas cuando estamos viendo el día de hoy,
       // ya que es el único día donde "nueva cita" tiene sentido operativo.
-      const esHoy = fechaAgenda === new Date().toISOString().split('T')[0];
+      const esHoy = fechaAgenda === fechaHoyBogota();
       if (esHoy && !primeraCargaRef.current) {
         const prevIds = new Set(prevAgendaRef.current.map(c => c.id));
         const nuevas = dataAgenda.filter(c => !prevIds.has(c.id));
@@ -333,7 +335,7 @@ export default function RecepcionPanel() {
             <div className="rp-agenda-toolbar">
               <label>Viendo la agenda del:</label>
               <input type="date" value={fechaAgenda} onChange={e => setFechaAgenda(e.target.value)} />
-              <button className="rp-btn-secundario" onClick={() => setFechaAgenda(new Date().toISOString().split('T')[0])}>Hoy</button>
+              <button className="rp-btn-secundario" onClick={() => setFechaAgenda(fechaHoyBogota())}>Hoy</button>
             </div>
             {agenda.length === 0 && !loading && <p className="rp-empty">No hay citas agendadas para este día.</p>}
 
